@@ -8,10 +8,12 @@ package Paxos;
 public class ProposalId {
     // Attributes
     protected int id;
+    private int playerId;
 
     // Constructor
-    public ProposalId(int _id) {
+    public ProposalId(int _id, int _playerId) {
         this.id = _id;
+        this.setPlayerId(_playerId);
     }
 
     // Getter
@@ -19,9 +21,17 @@ public class ProposalId {
         return this.id;
     }
 
+    public int getPlayerId() {
+        return playerId;
+    }
+
     // Setter
     public void setId(int _id) {
         this.id = _id;
+    }
+
+    public void setPlayerId(int playerId) {
+        this.playerId = playerId;
     }
 
     // Methods
@@ -31,7 +41,7 @@ public class ProposalId {
 
     public int compare(ProposalId rhs) {
         if (this.id == rhs.id) {
-            return 0;
+            return Integer.compare(this.playerId, rhs.playerId);
         }
         else if (this.id < rhs.id) {
             return -1;
