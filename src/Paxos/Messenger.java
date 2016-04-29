@@ -4,9 +4,8 @@ import Communications.UnreliableSender;
 import Misc.ClientInfo;
 
 import java.io.IOException;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.net.SocketException;
+import java.net.*;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.json.simple.JSONArray;
@@ -102,5 +101,26 @@ public class Messenger {
         DatagramPacket datagramPacket = new DatagramPacket(data,data.length,clientInfo.getAddress(),clientInfo.getPort());
 
         unreliableSender.send(datagramPacket);
+    }
+
+    //untuk testing
+    //prosedur: jalankan netcat -ul untuk port 4000-4005
+    //periksa di semua
+    //mestinya ada beberapa yang ngga nyampe
+    public static void main (String [] args) throws IOException {
+        List<ClientInfo> listClient = new ArrayList<ClientInfo>();
+        for (int i=0;i<6;i++){
+            ClientInfo clientInfo = new ClientInfo(i, 1, InetAddress.getByName("localhost"), 4000+i, "tai" + i, "civilian");
+            listClient.add(clientInfo);
+        }
+
+        Messenger messenger = new Messenger(listClient,5,4);
+
+        ProposalId proposalId = new ProposalId(1,2);
+
+        messenger.sendPrepare(proposalId);
+        messenger.sendPromise(0,1,2);
+        messenger.sendAccept(proposalId,1);
+        messenger.sendAccepted(proposalId, 2);
     }
 }
