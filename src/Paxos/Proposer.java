@@ -1,5 +1,6 @@
 package Paxos;
 
+import java.io.IOException;
 import java.util.HashSet;
 
 /**
@@ -20,7 +21,7 @@ public class Proposer {
     public Proposer(Messenger _messenger, int _quorumSize) {
         this.messenger = _messenger;
         this.quorumSize = _quorumSize;
-        this.proposalId = new ProposalId(0);
+        this.proposalId = new ProposalId(0, 0);
     }
 
     // Getter
@@ -41,7 +42,7 @@ public class Proposer {
     }
 
     // Setter
-    public void setProposedValue(Object _proposalValue) {
+    public void setProposedValue(int _proposalValue) {
         this.proposedValue = _proposalValue;
     }
 
@@ -83,6 +84,10 @@ public class Proposer {
     public void prepare() {
         promisesReceived.clear();
         proposalId.incrementId();
-        messenger.sendPrepare(proposalId);
+        try {
+            messenger.sendPrepare(proposalId);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }
