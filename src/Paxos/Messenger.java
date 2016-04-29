@@ -4,9 +4,8 @@ import Communications.UnreliableSender;
 import Misc.ClientInfo;
 
 import java.io.IOException;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.net.SocketException;
+import java.net.*;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.json.simple.JSONArray;
@@ -15,6 +14,7 @@ import org.json.simple.JSONObject;
 /**
  * Created by erickchandra on 4/25/16.
  */
+//TODO tambah learner
 public class Messenger {
 
     List<ClientInfo> listClient;
@@ -63,7 +63,7 @@ public class Messenger {
         }
     }
 
-    public void sendAccept(ProposalId proposalId, int proposalValue){
+    public void sendAccept(ProposalId proposalId, int proposalValue) throws IOException {
         JSONObject jsonObject = new JSONObject();
         JSONArray jsonArray = new JSONArray();
         jsonArray.add(proposalId.getId());
@@ -71,14 +71,27 @@ public class Messenger {
         jsonObject.put("method", "accept_proposal");
         jsonObject.put("proposal_id", jsonArray);
         jsonObject.put("kpu_id", proposalValue);
+        for (ClientInfo clientInfo : listClient){
+            if (clientInfo.getPlayer_id() == proposalId.getPlayerId()){
+                sendJSONString(jsonObject,clientInfo);
+            }
+        }
     }
 
-    public void sendAccepted(ProposalId proposalID, Object acceptedValue){
-
+    public void sendAccepted(ProposalId proposalId, Object acceptedValue) throws IOException {
+        JSONObject jsonObject = new JSONObject();
+        jsonObject.put("status", "ok");
+        jsonObject.put("description", "accepted");
+        for (ClientInfo clientInfo : listClient){
+            if (clientInfo.getPlayer_id() == proposalId.getPlayerId()){
+                sendJSONString(jsonObject,clientInfo);
+            }
+        }
+        //TODO tambah learner
     }
 
     public void onResolution(ProposalId proposalID, Object value){
-
+        //TODO diisi nanti
     }
 
     //helper
@@ -88,5 +101,26 @@ public class Messenger {
         DatagramPacket datagramPacket = new DatagramPacket(data,data.length,clientInfo.getAddress(),clientInfo.getPort());
 
         unreliableSender.send(datagramPacket);
+    }
+
+    //untuk testing
+    //prosedur: jalankan netcat -ul untuk port 4000-4005
+    //periksa di semua
+    //mestinya ada beberapa yang ngga nyampe
+    public static void main (String [] args) throws IOException {
+        List<ClientInfo> listClient = new ArrayList<ClientInfo>();
+        for (int i=0;i<6;i++){
+            ClientInfo clientInfo = new ClientInfo(i, 1, InetAddress.getByName("localhost"), 4000+i, "tai" + i, "civilian");
+            listClient.add(clientInfo);
+        }
+
+        Messenger messenger = new Messenger(listClient,5,4);
+
+        ProposalId proposalId = new ProposalId(1,2);
+
+        messenger.sendPrepare(proposalId);
+        messenger.sendPromise(0,1,2);
+        messenger.sendAccept(proposalId,1);
+        messenger.sendAccepted(proposalId, 2);
     }
 }
