@@ -66,7 +66,6 @@ public class CommandLineUI implements UI{
     }
 
     // Leave
-    // Leave
     @Override
     public void displaySuccessfulLeave(){
         System.out.println("=====ReadyUp Result=====");
@@ -78,6 +77,17 @@ public class CommandLineUI implements UI{
         System.out.println("=====ReadyUp Result=====");
         System.out.println("status: failed");
         System.out.println("cause: " + cause);
+    }
+
+    //List Client
+    @Override
+    public void displaySuccessfulRetrieveList(){
+
+    }
+
+    @Override
+    public void displayFailedRetrieveList(String cause){
+
     }
 
 }
