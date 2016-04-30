@@ -9,7 +9,7 @@ import java.util.Scanner;
 public class CommandLineUI implements UI{
 
     @Override
-    public InetSocketAddress askServerAddress() {
+    public InetSocketAddress askServerAddress(){
         Scanner scanIn = new Scanner(System.in);
 
         System.out.println("=====Server Info=====");
@@ -30,64 +30,40 @@ public class CommandLineUI implements UI{
     }
 
     @Override
-    public void displaySuccessfulServerJoin() {
-        System.out.println("=====Join Result=====");
-        System.out.println("status: ok");
-    }
-
-    @Override
-    public void displayFailedServerJoin(String cause) {
-        System.out.println("=====Join Result=====");
-        System.out.println("status: failed");
-        System.out.println("cause: " + cause);
-    }
-
-    @Override
-    public String askUsername() {
-        System.out.println("=====Join Result=====");
+    public String askUsername(){
+        System.out.println("=====Insert Username=====");
         System.out.print("user name: ");
 
         Scanner scanIn = new Scanner(System.in);
         return scanIn.nextLine();
     }
 
-    // Ready Up
     @Override
-    public void displaySuccessfulReadyUp() {
-        System.out.println("=====ReadyUp Result=====");
+    public int askPortUDP() {
+        System.out.println("=====Insert UDP Port=====");
+        System.out.print("port UDP: ");
+
+        Scanner scanIn = new Scanner(System.in);
+        return Integer.getInteger(scanIn.nextLine());
+    }
+
+    @Override
+    public void displaySuccessfulResponse(String header){
+        System.out.println("=====" + header + " Result=====");
         System.out.println("status: ok");
     }
 
     @Override
-    public void displayFailedReadyUp(String cause) {
-        System.out.println("=====ReadyUp Result=====");
+    public void displayFailedResponse(String header, String cause){
+        System.out.println("=====" + header + " Result=====");
         System.out.println("status: failed");
         System.out.println("cause: " + cause);
     }
 
-    // Leave
     @Override
-    public void displaySuccessfulLeave(){
-        System.out.println("=====ReadyUp Result=====");
-        System.out.println("status: ok");
-    }
-
-    @Override
-    public void displayFailedLeave(String cause){
-        System.out.println("=====ReadyUp Result=====");
+    public void displayErrorResponse(String header, String cause) {
+        System.out.println("=====" + header + " Result=====");
         System.out.println("status: failed");
         System.out.println("cause: " + cause);
     }
-
-    //List Client
-    @Override
-    public void displaySuccessfulRetrieveList(){
-
-    }
-
-    @Override
-    public void displayFailedRetrieveList(String cause){
-
-    }
-
 }

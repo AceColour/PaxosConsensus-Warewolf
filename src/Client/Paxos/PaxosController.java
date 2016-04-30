@@ -40,10 +40,10 @@ public class PaxosController extends Thread{
         idTerbesar = 0;
         idKeduaTerbesar = 0;
         for (ClientInfo clientInfo: clientList){
-            if (clientInfo.getPlayer_id()>idTerbesar)
-                idTerbesar = clientInfo.getPlayer_id();
-            else if (clientInfo.getPlayer_id()>idKeduaTerbesar)
-                idKeduaTerbesar = clientInfo.getPlayer_id();
+            if (clientInfo.getPlayerId()>idTerbesar)
+                idTerbesar = clientInfo.getPlayerId();
+            else if (clientInfo.getPlayerId()>idKeduaTerbesar)
+                idKeduaTerbesar = clientInfo.getPlayerId();
         }
 
         messenger = new Messenger(clientList,idTerbesar,idKeduaTerbesar,datagramSocket);
@@ -169,7 +169,7 @@ public class PaxosController extends Thread{
     public int getUIDFromPortAndInetAddress(InetAddress address, int port){
         for (ClientInfo clientInfo: clientList){
             if (clientInfo.getAddress().equals(address) && clientInfo.getPort() == port)
-                return clientInfo.getPlayer_id();
+                return clientInfo.getPlayerId();
         }
         return -1;
     }

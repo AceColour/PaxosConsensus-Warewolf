@@ -43,7 +43,7 @@ public class Messenger {
 
         for (ClientInfo clientInfo : listClient){
 
-            if (clientInfo.getPlayer_id() != clientIdKeduaTerbesar && clientInfo.getPlayer_id() != clientIdTerbesar){
+            if (clientInfo.getPlayerId() != clientIdKeduaTerbesar && clientInfo.getPlayerId() != clientIdTerbesar){
 
                 sendJSONString(jsonObject,clientInfo);
             }
@@ -57,7 +57,7 @@ public class Messenger {
         jsonObject.put("previous_accepted", prevAcceptedValue);
 
         for (ClientInfo clientInfo : listClient){
-            if (clientInfo.getPlayer_id() == proposerUID){
+            if (clientInfo.getPlayerId() == proposerUID){
                 sendJSONString(jsonObject,clientInfo);
             }
         }
@@ -72,7 +72,7 @@ public class Messenger {
         jsonObject.put("proposal_id", jsonArray);
         jsonObject.put("kpu_id", proposalValue);
         for (ClientInfo clientInfo : listClient){
-            if (clientInfo.getPlayer_id() == proposalId.getPlayerId()){
+            if (clientInfo.getPlayerId() == proposalId.getPlayerId()){
                 sendJSONString(jsonObject,clientInfo);
             }
         }
@@ -83,7 +83,7 @@ public class Messenger {
         jsonObject.put("status", "ok");
         jsonObject.put("description", "accepted");
         for (ClientInfo clientInfo : listClient){
-            if (clientInfo.getPlayer_id() == proposalId.getPlayerId()){
+            if (clientInfo.getPlayerId() == proposalId.getPlayerId()){
                 sendJSONString(jsonObject,clientInfo);
             }
         }
@@ -99,7 +99,7 @@ public class Messenger {
         jsonObject.put("status", "fail");
         jsonObject.put("description", description);
         for (ClientInfo clientInfo : listClient){
-            if (clientInfo.getPlayer_id() == UID){
+            if (clientInfo.getPlayerId() == UID){
                 sendJSONString(jsonObject,clientInfo);
             }
         }
@@ -110,7 +110,7 @@ public class Messenger {
         jsonObject.put("status", "error");
         jsonObject.put("description", description);
         for (ClientInfo clientInfo : listClient){
-            if (clientInfo.getPlayer_id() == UID){
+            if (clientInfo.getPlayerId() == UID){
                 sendJSONString(jsonObject,clientInfo);
             }
         }
@@ -129,20 +129,20 @@ public class Messenger {
     //prosedur: jalankan netcat -ul untuk port 4000-4005
     //periksa di semua
     //mestinya ada beberapa yang ngga nyampe
-    public static void main (String [] args) throws IOException {
-        List<ClientInfo> listClient = new ArrayList<ClientInfo>();
-        for (int i=0;i<6;i++){
-            ClientInfo clientInfo = new ClientInfo(i, 1, InetAddress.getByName("localhost"), 4000+i, "tai" + i);
-            listClient.add(clientInfo);
-        }
-
-        Messenger messenger = new Messenger(listClient,5,4,new DatagramSocket());
-
-        ProposalId proposalId = new ProposalId(1,2);
-
-        messenger.sendPrepare(proposalId);
-        messenger.sendPromise(0,1,2);
-        messenger.sendAccept(proposalId,1);
-        messenger.sendAccepted(proposalId, 2);
-    }
+//    public static void main (String [] args) throws IOException {
+//        List<ClientInfo> listClient = new ArrayList<ClientInfo>();
+//        for (int i=0;i<6;i++){
+//            ClientInfo clientInfo = new ClientInfo(i, 1, InetAddress.getByName("localhost"), 4000+i, "tai" + i);
+//            listClient.add(clientInfo);
+//        }
+//
+//        Messenger messenger = new Messenger(listClient,5,4,new DatagramSocket());
+//
+//        ProposalId proposalId = new ProposalId(1,2);
+//
+//        messenger.sendPrepare(proposalId);
+//        messenger.sendPromise(0,1,2);
+//        messenger.sendAccept(proposalId,1);
+//        messenger.sendAccepted(proposalId, 2);
+//    }
 }

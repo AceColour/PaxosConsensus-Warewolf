@@ -1,8 +1,9 @@
 package Client;
 
-import Misc.ClientInfo;
-import Paxos.Acceptor;
-import Paxos.Proposer;
+
+import Client.Communications.TCPRequestResponseChannel;
+import Client.Misc.ClientInfo;
+import Client.Paxos.PaxosController;
 import jdk.nashorn.internal.parser.JSONParser;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
@@ -11,6 +12,8 @@ import org.json.simple.parser.ParseException;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
@@ -23,217 +26,263 @@ public class Client {
     private Boolean isReady;
     private Boolean isStart;
     private Boolean isKPU;
-    private InetSocketAddress serverAddress;
+    private Boolean isDay;
+
+    //
+    private ArrayList<ClientInfo> listPlayer = new ArrayList<ClientInfo>();
+
+    //
+    private ArrayList<String> friends = new ArrayList<String>();
+
+    //
+    private int daysCount;
+
     private int numPlayer;
-    private List<ClientInfo> listPlayer;
-    private String role;
+
+    // Paxos Controller
+    PaxosController paxosController;
+
+    // TCP
+    private InetSocketAddress serverAddress;
+
+    // UDP
+    private InetSocketAddress UDPAddress;
+
+    private TCPRequestResponseChannel communicator;
+
 
     public Client(){
+        // Initialization
         ui = new CommandLineUI();
+        // playerInfo = new ClientInfo()
         isKPU = false;
+        isDay = false;
         numPlayer = 0;
+        daysCount = 0;
     }
 
-    public void join(){
-        boolean retry_joining;
-        do{
-            serverAddress = ui.askServerAddress();
-            playerInfo.setUsername(ui.askUsername());
+    public void join() throws IOException {
 
-            JSONObject server_join_response;
-            SynchronousTCPJSONClient synchronousTCPJSONClient = new SynchronousTCPJSONClient(serverAddress);
-            try {
-                synchronousTCPJSONClient.connect();
+        // Set username
+        playerInfo.setUsername(ui.askUsername());
 
-                JSONObject join_request = new JSONObject();
-                join_request.put("method","join");
-                join_request.put("username",playerInfo.getUsername());
-                server_join_response = synchronousTCPJSONClient.call(join_request);
+        // Variable to determine request whether ok or not
+        Boolean retryRequest = false;
 
-                String status = (String) server_join_response.get("status");
+        // Create JSON Object for join request
+        JSONObject joinRequest = new JSONObject();
+        joinRequest.put("method", "join");
+        joinRequest.put("username", playerInfo.getUsername());
+        joinRequest.put("udp_address", UDPAddress.getAddress().toString());
+        joinRequest.put("udp_port", UDPAddress.getPort());
 
-                if (status==null){
-                    ui.displayFailedServerJoin("connection failure: error response from server");
-                    retry_joining = true;
-                }else if (status.equals("ok")){
-                    playerInfo.setPlayer_id( (Integer) server_join_response.get("player_id"));
-                    if (playerInfo.getPlayer_id() < 0){
-                        ui.displayFailedServerJoin("connection failure: error response from server");
-                        retry_joining = true;
-                    }else{
-                        ui.displaySuccessfulServerJoin();
-                        retry_joining = false;
-                    }
-                }else if (status.equals("fail")){
-                    ui.displayFailedServerJoin("server refused: " + server_join_response.get("description"));
-                    retry_joining=true;
-                }else if (status.equals("error")){
-                    ui.displayFailedServerJoin("error: " + server_join_response.get("description"));
-                    retry_joining=true;
-                }else{
-                    ui.displayFailedServerJoin("connection failure: error response from server");
-                    retry_joining = true;
-                }
-            } catch (IOException e) {
-                ui.displayFailedServerJoin("connection failure" + e);
-                retry_joining = true;
-            } catch (ParseException e) {
-                ui.displayFailedServerJoin("connection failure" + e);
-                retry_joining = true;
+        do {
+            // Get JSON Object as join response from server
+            JSONObject joinResponse = new JSONObject(communicator.sendRequestAndGetResponse(joinRequest));
+
+            // Get status from response
+            String status = joinResponse.get("status").toString();
+
+            // Check status response from server
+            if (status == null) {
+                ui.displayFailedResponse("Join", "connection failure: error response from server");
+                retryRequest = true;
+            } else if(status.equals("ok")){
+                ui.displaySuccessfulResponse("Join");
+                playerInfo.setPlayerId(Integer.parseInt(joinResponse.get("player_id").toString()));
+            } else if(status.equals("fail")) {
+                ui.displayFailedResponse("Join", "connection failure: error response from server");
+                retryRequest = true;
+            } else if(status.equals("error")){
+                ui.displayErrorResponse("Join", "error: " + joinResponse.get("description"));
+                retryRequest = true;
+            } else {
+                ui.displayErrorResponse("Join", "error: error is undetermined");
+                retryRequest = true;
             }
-        }while (retry_joining);
+        }while (retryRequest); // while there is error or failed response, try send request again
     }
 
-    public void run(){
+    public void start() {
+        // listening to the port
+        JSONObject recv = communicator.getLastRequestDariSeberangSana();
+        if(recv.get("method").equals("start")) {
+            isDay = recv.get("time").equals("day");
+            playerInfo.setRole(recv.get("role").toString());
+            if(playerInfo.getRole().equals("werewolf")){
+                friends = (ArrayList)recv.get("friends");
+            }
+
+            // Send back response to server
+            JSONObject response = new JSONObject();
+            response.put("status", "ok");
+            communicator.sendResponseKeSeberangSana(response);
+
+        }
+        daysCount++;
+        isDay = true;
+    }
+
+    public void run() throws IOException {
+        // Get UDP Port
+        try {
+            UDPAddress = new InetSocketAddress(
+                    InetAddress.getLocalHost().getHostAddress(),
+                    ui.askPortUDP()
+            );
+        } catch (UnknownHostException e) {
+            e.printStackTrace();
+        }
+
+        // Initializing TCP Channel for request and response
+        try {
+            communicator = new TCPRequestResponseChannel(
+                    ui.askServerAddress().getAddress(),
+                    ui.askServerAddress().getPort()
+            );
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
         join();
         if(isReady && isStart) {
-
+            paxosController.run();
         }
     }
 
     public void leave() {
-        boolean retry_leave = false;
-        do{
-            JSONObject server_leave_response;
-            SynchronousTCPJSONClient synchronousTCPJSONClient = new SynchronousTCPJSONClient(serverAddress);
-            try {
-                synchronousTCPJSONClient.connect();
+        // Variable to determine request whether ok or not
+        Boolean retryRequest = false;
 
-                JSONObject leave_request = new JSONObject();
-                leave_request.put("method","leave");
-                server_leave_response = synchronousTCPJSONClient.call(leave_request);
+        // Create JSON Object for leave request
+        JSONObject leaveRequest = new JSONObject();
+        leaveRequest.put("method", "leave");
 
-                String status = (String) server_leave_response.get("status");
+        do {
+            // Get JSON Object as join response from server
+            JSONObject leaveResponse = new JSONObject(communicator.sendRequestAndGetResponse(leaveRequest));
 
-                if (status==null){
-                    ui.displayFailedLeave("connection failure: error response from server");
-                    retry_leave = true;
-                }else if (status.equals("ok")){
-                    ui.displaySuccessfulLeave();
-                    isReady = false;
-                    isStart = false;
-                }else if (status.equals("fail")){
+            // Get status from response
+            String status = leaveResponse.get("status").toString();
 
-                }else if (status.equals("error")){
-                    ui.displayFailedLeave("error: " + server_leave_response.get("description"));
-                    retry_leave=true;
-                }else{
-                    ui.displayFailedLeave("connection failure: error response from server");
-                    retry_leave = true;
-                }
-            } catch (IOException e) {
-                ui.displayFailedReadyUp("connection failure" + e);
-                retry_leave = true;
-            } catch (ParseException e) {
-                ui.displayFailedReadyUp("connection failure" + e);
-                retry_leave = true;
+            // Check status response from server
+            if (status == null) {
+                ui.displayFailedResponse("Leave", "connection failure: error response from server");
+                retryRequest = true;
+            } else if(status.equals("ok")){
+                ui.displaySuccessfulResponse("Leave");
+                playerInfo.setIsAlive(0);
+            } else if(status.equals("fail")) {
+                ui.displayFailedResponse("Leave", "connection failure: error response from server");
+                retryRequest = true;
+            } else if(status.equals("error")){
+                ui.displayErrorResponse("Leave", "error: " + leaveResponse.get("description"));
+                retryRequest = true;
+            } else {
+                ui.displayErrorResponse("Leave", "error: error is undetermined");
+                retryRequest = true;
             }
-        }while (retry_leave);
+        }while (retryRequest); // while there is error or failed response, try send request again
     }
 
-    public void readyup() {
-        boolean retry_readyup = false;
-        do{
-            JSONObject server_readyup_response;
-            SynchronousTCPJSONClient synchronousTCPJSONClient = new SynchronousTCPJSONClient(serverAddress);
-            try {
-                synchronousTCPJSONClient.connect();
+    public void readyUp() {
+        // Variable to determine request whether ok or not
+        Boolean retryRequest = false;
 
-                JSONObject readyup_request = new JSONObject();
-                readyup_request.put("method","ready");
-                server_readyup_response = synchronousTCPJSONClient.call(readyup_request);
+        // Create JSON Object for readyUp request
+        JSONObject readyUpRequest = new JSONObject();
+        readyUpRequest.put("method", "ready");
 
-                String status = (String) server_readyup_response.get("status");
+        do {
+            // Get JSON Object as join response from server
+            JSONObject readyUpResponse = new JSONObject(communicator.sendRequestAndGetResponse(readyUpRequest));
 
-                if (status==null){
-                    ui.displayFailedReadyUp("connection failure: error response from server");
-                    retry_readyup = true;
-                }else if (status.equals("ok")){
-                    ui.displaySuccessfulReadyUp();
-                    isReady = true;
+            // Get status from response
+            String status = readyUpResponse.get("status").toString();
 
-                    // Wait until server send start response
-                    String statusStart;
-
-                }else if (status.equals("fail")){
-
-                }else if (status.equals("error")){
-                    ui.displayFailedReadyUp("error: " + server_readyup_response.get("description"));
-                    retry_readyup=true;
-                }else{
-                    ui.displayFailedReadyUp("connection failure: error response from server");
-                    retry_readyup = true;
-                }
-            } catch (IOException e) {
-                ui.displayFailedReadyUp("connection failure" + e);
-                retry_readyup = true;
-            } catch (ParseException e) {
-                ui.displayFailedReadyUp("connection failure" + e);
-                retry_readyup = true;
+            // Check status response from server
+            if (status == null) {
+                ui.displayFailedResponse("Retrieve List Client", "connection failure: error response from server");
+                retryRequest = true;
+            } else if(status.equals("ok")){
+                ui.displaySuccessfulResponse("Retrieve List Client");
+                isReady = true;
+            } else if(status.equals("fail")) {
+                ui.displayFailedResponse("Retrieve List Client", "connection failure: error response from server");
+                retryRequest = true;
+            } else if(status.equals("error")){
+                ui.displayErrorResponse("Retrieve List Client", "error: " + readyUpResponse.get("description"));
+                retryRequest = true;
+            } else {
+                ui.displayErrorResponse("Retrieve List Client", "error: error is undetermined");
+                retryRequest = true;
             }
-        }while (retry_readyup);
+        }while (retryRequest); // while there is error or failed response, try send request again
     }
 
-    public void retrieveListClient() {
-        boolean retry_retrievelist = false;
-        do{
-            JSONObject server_retrievelist_response;
-            SynchronousTCPJSONClient synchronousTCPJSONClient = new SynchronousTCPJSONClient(serverAddress);
-            try {
-                synchronousTCPJSONClient.connect();
+    public void retrieveListClient() throws UnknownHostException {
 
-                JSONObject retrievelist_request = new JSONObject();
-                retrievelist_request.put("method","ready");
-                server_retrievelist_response = synchronousTCPJSONClient.call(retrievelist_request);
+        // Variable to determine request whether ok or not
+        Boolean retryRequest = false;
 
-                String status = (String) server_retrievelist_response.get("status");
+        // Create JSON Object for listClient request
+        JSONObject listClientRequest = new JSONObject();
+        listClientRequest.put("method", "ready");
 
-                if (status==null){
-                    ui.displayFailedRetrieveList("connection failure: error response from server");
-                    retry_retrievelist = true;
-                }else if (status.equals("ok")){
-                    ui.displaySuccessfulRetrieveList();
-                    isReady = true;
+        do {
+            // Get JSON Object as join response from server
+            JSONObject listClientResponse = new JSONObject(communicator.sendRequestAndGetResponse(listClientRequest));
 
-                    listPlayer.clear();
-                    //listPlayer.add()
+            // Get status from response
+            String status = listClientResponse.get("status").toString();
 
-                    JSONArray slideContent = (JSONArray) server_retrievelist_response.get("clients");
-                    Iterator i = slideContent.iterator();
+            // Check status response from server
+            if (status == null) {
+                ui.displayFailedResponse("Retrieve List Client", "connection failure: error response from server");
+                retryRequest = true;
+            } else if(status.equals("ok")){
+                ui.displaySuccessfulResponse("Retrieve List Client");
 
-                    while (i.hasNext()) {
-                        JSONObject clientJSON = (JSONObject) i.next();
-                        listPlayer.add(new ClientInfo(
-                                (Integer) clientJSON.get("player_id"),
-                                (Integer) clientJSON.get("is_alive"),
-                                InetAddress.getByName((String)clientJSON.get("address")),
-                                (Integer) clientJSON.get("port"),
-                                (String)clientJSON.get("username")
-                        ));
-                    }
+                // Clear list player
+                listPlayer.clear();
 
-                }else if (status.equals("fail")){
+                // Iterating client's array
+                JSONArray slideContent = (JSONArray) listClientResponse.get("clients");
+                Iterator i = slideContent.iterator();
 
-                }else if (status.equals("error")){
-                    ui.displayFailedRetrieveList("error: " + server_retrievelist_response.get("description"));
-                    retry_retrievelist=true;
-                }else{
-                    ui.displayFailedRetrieveList("connection failure: error response from server");
-                    retry_retrievelist = true;
+                while (i.hasNext()) {
+                    JSONObject clientJSON = (JSONObject) i.next();
+
+                    // Add client to list Player
+                    listPlayer.add(new ClientInfo(
+                            (Integer) clientJSON.get("player_id"),
+                            (Integer) clientJSON.get("is_alive"),
+                            InetAddress.getByName((String)clientJSON.get("address")),
+                            (Integer) clientJSON.get("port"),
+                            (String)clientJSON.get("username")
+                    ));
                 }
-            } catch (IOException e) {
-                ui.displayFailedRetrieveList("connection failure" + e);
-                retry_retrievelist = true;
-            } catch (ParseException e) {
-                ui.displayFailedRetrieveList("connection failure" + e);
-                retry_retrievelist = true;
+
+            } else if(status.equals("fail")) {
+                ui.displayFailedResponse("Retrieve List Client", "connection failure: error response from server");
+                retryRequest = true;
+            } else if(status.equals("error")){
+                ui.displayErrorResponse("Retrieve List Client", "error: " + listClientResponse.get("description"));
+                retryRequest = true;
+            } else {
+                ui.displayErrorResponse("Retrieve List Client", "error: error is undetermined");
+                retryRequest = true;
             }
-        }while (retry_retrievelist);
+        }while (retryRequest); // while there is error or failed response, try send request again
     }
 
-    public static void main(String [] args){
+    public static void main(String [] args) throws IOException {
         Client client = new Client();
 
-        client.run();
+        try {
+            client.run();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }

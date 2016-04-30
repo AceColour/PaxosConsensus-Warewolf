@@ -6,32 +6,39 @@ import java.net.InetAddress;
  * Created by nim_13512501 on 4/29/16.
  */
 public class ClientInfo {
-    private int player_id;
-    private int is_alive;
+    private int playerId;
+    private int isAlive;
     private InetAddress address;
     private int port;
     private String username;
-
+    private String role;
 
     // Constructor
-
-    public ClientInfo(int player_id, int is_alive, InetAddress address, int port, String username){
-        this.player_id = player_id;
-        this.is_alive = is_alive;
+    public ClientInfo(int playerId, int isAlive, InetAddress address, int port, String username){
+        this.playerId = playerId;
+        this.isAlive = isAlive;
         this.address = address;
         this.port = port;
         this.username = username;
     }
 
-
-    // Getter
-
-    public int getPlayer_id() {
-        return player_id;
+    public ClientInfo(int playerId, int isAlive, InetAddress address, int port, String username, String role){
+        this.playerId = playerId;
+        this.isAlive = isAlive;
+        this.address = address;
+        this.port = port;
+        this.username = username;
+        this.role = role;
     }
 
-    public int getIs_alive() {
-        return is_alive;
+
+    // Getter
+    public int getPlayerId() {
+        return playerId;
+    }
+
+    public int getIsAlive() {
+        return isAlive;
     }
 
     public InetAddress getAddress() {
@@ -46,15 +53,18 @@ public class ClientInfo {
         return username;
     }
 
-
-    // Setter
-
-    public void setPlayer_id(int player_id) {
-        this.player_id = player_id;
+    public String getRole() {
+        return role;
     }
 
-    public void setIs_alive(int is_alive) {
-        this.is_alive = is_alive;
+
+    // Setter
+    public void setPlayerId(int playerId) {
+        this.playerId = playerId;
+    }
+
+    public void setIsAlive(int isAlive) {
+        this.isAlive = isAlive;
     }
 
     public void setAddress(InetAddress address) {
@@ -67,5 +77,9 @@ public class ClientInfo {
 
     public void setUsername(String username) {
         this.username = username;
+    }
+
+    public void setRole(String role){
+        this.role = role;
     }
 }
