@@ -24,12 +24,12 @@ public class Messenger {
     DatagramSocket datagramSocket;
     UnreliableSender unreliableSender;
 
-    public Messenger (List<ClientInfo> listClient, int clientIdTerbesar, int clientIdKeduaTerbesar) throws SocketException {
+    public Messenger (List<ClientInfo> listClient, int clientIdTerbesar, int clientIdKeduaTerbesar, DatagramSocket datagramSocket) throws SocketException {
         this.listClient = listClient;
         this.clientIdTerbesar = clientIdTerbesar;
         this.clientIdKeduaTerbesar = clientIdKeduaTerbesar;
 
-        datagramSocket = new DatagramSocket();
+        this.datagramSocket = datagramSocket;
         unreliableSender = new UnreliableSender(datagramSocket);
     }
 
@@ -94,6 +94,28 @@ public class Messenger {
         //TODO diisi nanti
     }
 
+    public void sendFail(int UID, String description) throws IOException {
+        JSONObject jsonObject = new JSONObject();
+        jsonObject.put("status", "fail");
+        jsonObject.put("description", description);
+        for (ClientInfo clientInfo : listClient){
+            if (clientInfo.getPlayer_id() == UID){
+                sendJSONString(jsonObject,clientInfo);
+            }
+        }
+    }
+
+    public void sendError(int UID, String description) throws IOException {
+        JSONObject jsonObject = new JSONObject();
+        jsonObject.put("status", "error");
+        jsonObject.put("description", description);
+        for (ClientInfo clientInfo : listClient){
+            if (clientInfo.getPlayer_id() == UID){
+                sendJSONString(jsonObject,clientInfo);
+            }
+        }
+    }
+
     //helper
     private void sendJSONString (JSONObject jsonObject, ClientInfo clientInfo) throws IOException {
         String jsonString = jsonObject.toJSONString();
@@ -114,7 +136,7 @@ public class Messenger {
             listClient.add(clientInfo);
         }
 
-        Messenger messenger = new Messenger(listClient,5,4);
+        Messenger messenger = new Messenger(listClient,5,4,new DatagramSocket());
 
         ProposalId proposalId = new ProposalId(1,2);
 
