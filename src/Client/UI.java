@@ -18,5 +18,9 @@ public interface UI {
     // Leave
     void displaySuccessfulLeave();
     void displayFailedLeave(String cause);
+
+    // List Client
+    void displaySuccessfulRetrieveList();
+    void displayFailedRetrieveList(String cause);
 }
 

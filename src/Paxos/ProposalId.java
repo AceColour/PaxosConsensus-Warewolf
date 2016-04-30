@@ -1,5 +1,7 @@
 package Paxos;
 
+import java.util.List;
+
 /**
  * Created by erickchandra on 4/25/16.
  *
@@ -9,6 +11,11 @@ public class ProposalId {
     // Attributes
     protected int id;
     private int playerId;
+
+    public ProposalId(List<Integer> playerIDListFromSpekYangAnehBanget ){
+        this.id = playerIDListFromSpekYangAnehBanget.get(0);
+        this.playerId = playerIDListFromSpekYangAnehBanget.get(1);
+    }
 
     // Constructor
     public ProposalId(int _id, int _playerId) {
