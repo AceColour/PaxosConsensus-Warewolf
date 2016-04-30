@@ -132,7 +132,7 @@ public class Messenger {
     public static void main (String [] args) throws IOException {
         List<ClientInfo> listClient = new ArrayList<ClientInfo>();
         for (int i=0;i<6;i++){
-            ClientInfo clientInfo = new ClientInfo(i, 1, InetAddress.getByName("localhost"), 4000+i, "tai" + i, "civilian");
+            ClientInfo clientInfo = new ClientInfo(i, 1, InetAddress.getByName("localhost"), 4000+i, "tai" + i);
             listClient.add(clientInfo);
         }
 
