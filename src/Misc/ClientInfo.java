@@ -11,18 +11,16 @@ public class ClientInfo {
     private InetAddress address;
     private int port;
     private String username;
-    private String role;
 
 
     // Constructor
 
-    public ClientInfo(int player_id, int is_alive, InetAddress address, int port, String username, String role){
+    public ClientInfo(int player_id, int is_alive, InetAddress address, int port, String username){
         this.player_id = player_id;
         this.is_alive = is_alive;
         this.address = address;
         this.port = port;
         this.username = username;
-        this.role = role;
     }
 
 
@@ -48,10 +46,6 @@ public class ClientInfo {
         return username;
     }
 
-    public String getRole() {
-        return role;
-    }
-
 
     // Setter
 
@@ -73,9 +67,5 @@ public class ClientInfo {
 
     public void setUsername(String username) {
         this.username = username;
-    }
-
-    public void setRole(String role) {
-        this.role = role;
     }
 }
