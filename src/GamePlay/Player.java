@@ -8,14 +8,16 @@ public class Player {
     private String ipAddress;
     private int portNumber;
     private int playerId;
-    private String playerRole;
+    private String username;
+    private boolean aliveStatus;
 
     // Constructor
-    public Player(String _ipAddress, int _portNumber, int _playerId, String _playerRole) {
+    public Player(String _ipAddress, int _portNumber, int _playerId, String _username, boolean _aliveStatus) {
         this.ipAddress = _ipAddress;
         this.portNumber = _portNumber;
         this.playerId = _playerId;
-        this.playerRole = _playerRole;
+        this.username = _username;
+        this.aliveStatus = _aliveStatus;
     }
 
     // Methods
@@ -32,8 +34,12 @@ public class Player {
         return playerId;
     }
 
-    public String getPlayerRole() {
-        return playerRole;
+    public String getUsername() {
+        return username;
+    }
+
+    public boolean getAliveStatus() {
+        return aliveStatus;
     }
 
     // Setter
@@ -49,7 +55,11 @@ public class Player {
         this.playerId = _playerId;
     }
 
-    public void setPlayerRole(String _playerRole) {
-        this.playerRole = _playerRole;
+    public void setUsername(String _username) {
+        this.username = _username;
+    }
+
+    public void setAliveStatus(boolean _aliveStatus) {
+        this.aliveStatus = _aliveStatus;
     }
 }
