@@ -101,6 +101,7 @@ public class TCPRequestResponseChannel extends Thread{
                     }else{
                         //TODO kirim error
                     }
+                    message = "";
                 } catch (ParseException e) {
                     e.printStackTrace();
                 } catch (InterruptedException e) {
