@@ -1,5 +1,6 @@
 package Client.Paxos;
 
+import Client.Communications.TCPRequestResponseChannel;
 import Client.Communications.UnreliableSender;
 import Client.Misc.ClientInfo;
 
@@ -24,13 +25,17 @@ public class Messenger {
     DatagramSocket datagramSocket;
     UnreliableSender unreliableSender;
 
-    public Messenger (List<ClientInfo> listClient, int clientIdTerbesar, int clientIdKeduaTerbesar, DatagramSocket datagramSocket) throws SocketException {
+    TCPRequestResponseChannel learnerChannel;
+
+    public Messenger (List<ClientInfo> listClient, int clientIdTerbesar, int clientIdKeduaTerbesar, DatagramSocket datagramSocket, TCPRequestResponseChannel learnerChannel) throws SocketException {
         this.listClient = listClient;
         this.clientIdTerbesar = clientIdTerbesar;
         this.clientIdKeduaTerbesar = clientIdKeduaTerbesar;
 
         this.datagramSocket = datagramSocket;
         unreliableSender = new UnreliableSender(datagramSocket);
+
+        this.learnerChannel = learnerChannel;
     }
 
     public void sendPrepare(ProposalId proposalId) throws IOException {
@@ -78,16 +83,25 @@ public class Messenger {
         }
     }
 
-    public void sendAccepted(ProposalId proposalId, int acceptedValue) throws IOException {
-        JSONObject jsonObject = new JSONObject();
-        jsonObject.put("status", "ok");
-        jsonObject.put("description", "accepted");
-        for (ClientInfo clientInfo : listClient){
-            if (clientInfo.getPlayerId() == proposalId.getPlayerId()){
-                sendJSONString(jsonObject,clientInfo);
+    public void sendAccepted(ProposalId proposalId, int acceptedValue) throws IOException, InterruptedException {
+
+        JSONObject jsonObjectToLearner = new JSONObject();
+        jsonObjectToLearner.put("method", "accepted_proposal");
+        jsonObjectToLearner.put("kpu_id", acceptedValue);
+        jsonObjectToLearner.put("Description", "Kpu is selected");
+
+        JSONObject learnerResponse = learnerChannel.sendRequestAndGetResponse(jsonObjectToLearner);
+
+        if (learnerResponse.get("status").equals("ok")){
+            JSONObject jsonObject = new JSONObject();
+            jsonObject.put("status", "ok");
+            jsonObject.put("description", "accepted");
+            for (ClientInfo clientInfo : listClient){
+                if (clientInfo.getPlayerId() == proposalId.getPlayerId()){
+                    sendJSONString(jsonObject,clientInfo);
+                }
             }
         }
-        //TODO tambah learner
     }
 
     public void onResolution(ProposalId proposalID,  int value){
