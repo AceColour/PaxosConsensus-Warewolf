@@ -29,7 +29,7 @@ public class Proposer {
         return this.proposalId;
     }
 
-    public Object getProposedValue() {
+    public int getProposedValue() {
         return this.proposedValue;
     }
 
@@ -41,18 +41,12 @@ public class Proposer {
         return this.quorumSize;
     }
 
+    public int numPromises() {
+        return promisesReceived.size();
+    }
     // Setter
     public void setProposedValue(int _proposalValue) {
         this.proposedValue = _proposalValue;
-    }
-
-    // Methods: SEND(s)
-    public void sendPrepare() {
-
-    }
-
-    public void sendAccept() {
-
     }
 
     // Methods: RECEIVE(s)
