@@ -17,7 +17,7 @@ import java.util.List;
  */
 
 //TODO nanti harus direfactor antara proposer dan acceptor
-public class PaxosController {
+public class PaxosController extends Thread{
     List<ClientInfo> clientList;
     Acceptor acceptor;
     Proposer proposer;
@@ -37,6 +37,7 @@ public class PaxosController {
      * @throws SocketException
      */
     public PaxosController(List<ClientInfo> clientList, int thisPlayerId, DatagramSocket datagramSocket) throws SocketException {
+        super();
 
         //hitung dua client id terbesar
         idTerbesar = 0;
@@ -55,7 +56,8 @@ public class PaxosController {
         this.thisPlayerId = thisPlayerId;
     }
 
-    public void runPaxosAlgorithm(){
+    @Override
+    public void run(){
         if (thisPlayerId == idTerbesar || thisPlayerId == idKeduaTerbesar)
             runAsProposer();
         else
@@ -78,7 +80,7 @@ public class PaxosController {
         continueListening = true;
         byte [] buf = new byte[65507];
         DatagramPacket message = new DatagramPacket(buf, 65507);
-        while (continueListening){
+        while (continueListening && !interrupted()){
             try {
                 datagramSocket.receive(message);
                 handleMessage(message);
