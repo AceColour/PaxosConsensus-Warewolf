@@ -3,11 +3,15 @@ package Client;
 import Misc.ClientInfo;
 import Paxos.Acceptor;
 import Paxos.Proposer;
+import jdk.nashorn.internal.parser.JSONParser;
+import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.ParseException;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.util.Iterator;
 import java.util.List;
 
 /**
@@ -22,6 +26,7 @@ public class Client {
     private InetSocketAddress serverAddress;
     private int numPlayer;
     private List<ClientInfo> listPlayer;
+    private String role;
 
     public Client(){
         ui = new CommandLineUI();
@@ -192,6 +197,20 @@ public class Client {
 
                     listPlayer.clear();
                     //listPlayer.add()
+
+                    JSONArray slideContent = (JSONArray) server_retrievelist_response.get("clients");
+                    Iterator i = slideContent.iterator();
+
+                    while (i.hasNext()) {
+                        JSONObject clientJSON = (JSONObject) i.next();
+                        listPlayer.add(new ClientInfo(
+                                (Integer) clientJSON.get("player_id"),
+                                (Integer) clientJSON.get("is_alive"),
+                                InetAddress.getByName((String)clientJSON.get("address")),
+                                (Integer) clientJSON.get("port"),
+                                (String)clientJSON.get("username")
+                        ));
+                    }
 
                 }else if (status.equals("fail")){
 
