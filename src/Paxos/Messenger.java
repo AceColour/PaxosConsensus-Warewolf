@@ -78,7 +78,7 @@ public class Messenger {
         }
     }
 
-    public void sendAccepted(ProposalId proposalId, Object acceptedValue) throws IOException {
+    public void sendAccepted(ProposalId proposalId, int acceptedValue) throws IOException {
         JSONObject jsonObject = new JSONObject();
         jsonObject.put("status", "ok");
         jsonObject.put("description", "accepted");
@@ -90,7 +90,7 @@ public class Messenger {
         //TODO tambah learner
     }
 
-    public void onResolution(ProposalId proposalID, Object value){
+    public void onResolution(ProposalId proposalID,  int value){
         //TODO diisi nanti
     }
 

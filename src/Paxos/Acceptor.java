@@ -1,5 +1,7 @@
 package Paxos;
 
+import java.io.IOException;
+
 /**
  * Created by erickchandra on 4/25/16.
  *
@@ -7,9 +9,11 @@ package Paxos;
  */
 public class Acceptor {
     // Attributes
+    protected Messenger messenger;
     protected ProposalId promisedId;
     protected ProposalId acceptedId;
-    protected Object acceptedValue;
+    protected int acceptedValue;
+    protected int prevAcceptedValue;
 
     // Constructor
 
@@ -23,9 +27,11 @@ public class Acceptor {
         return acceptedId;
     }
 
-    public Object getAcceptedValue() {
+    public int getAcceptedValue() {
         return acceptedValue;
     }
+
+    public int getPrevAcceptedValue() {return prevAcceptedValue;}
 
     // Setter: N/A
 
@@ -39,11 +45,25 @@ public class Acceptor {
     }
 
     // Methods: RECEIVE(s)
-    public void receivePrepare() {
-
+    public void receivePrepare(int fromUId, ProposalId proposalId) throws IOException {
+        if (this.promisedId != null && proposalId.equals(promisedId)) { // duplicate message
+            messenger.sendPromise(fromUId, prevAcceptedValue, acceptedValue);
+        }
+        else if (this.promisedId == null || proposalId.getId() > promisedId.getId()) {
+            promisedId = proposalId;
+            messenger.sendPromise(fromUId, prevAcceptedValue, acceptedValue);
+        }
     }
 
-    public void receiveAccept() {
+    public void receiveAccept(int fromUId, ProposalId proposalId,
+                              int value) throws IOException {
+        if (promisedId == null || proposalId.getId() > promisedId.getId() || proposalId.equals(promisedId)) {
+            promisedId    = proposalId;
+            acceptedId    = proposalId;
+            prevAcceptedValue = acceptedValue;
+            acceptedValue = value;
 
+            messenger.sendAccepted(acceptedId, acceptedValue);
+        }
     }
 }

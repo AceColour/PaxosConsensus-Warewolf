@@ -29,7 +29,7 @@ public class Proposer {
         return this.proposalId;
     }
 
-    public Object getProposedValue() {
+    public int getProposedValue() {
         return this.proposedValue;
     }
 
@@ -41,29 +41,23 @@ public class Proposer {
         return this.quorumSize;
     }
 
+    public int numPromises() {
+        return promisesReceived.size();
+    }
     // Setter
     public void setProposedValue(int _proposalValue) {
         this.proposedValue = _proposalValue;
     }
 
-    // Methods: SEND(s)
-    public void sendPrepare() {
-
-    }
-
-    public void sendAccept() {
-
-    }
-
     // Methods: RECEIVE(s)
-    public void receivePromise(int _fromUid, ProposalId _proposalId, ProposalId _prevAcceptedId, int _prevAcceptedValue) {
+    public void receivePromise(int _fromUid, ProposalId _proposalId, ProposalId _prevAcceptedId, int _prevAcceptedValue) throws IOException {
         if (!proposalId.equals(this.proposalId) || promisesReceived.contains(_fromUid)) {
             return;
         }
 
         promisesReceived.add(_fromUid);
 
-        if (lastAcceptedId == null || _prevAcceptedId.isGreaterThan(lastAcceptedId)) {
+        if (lastAcceptedId == null || _prevAcceptedId.getId() > lastAcceptedId.getId()) {
             lastAcceptedId = _prevAcceptedId;
 
             proposedValue = _prevAcceptedValue;

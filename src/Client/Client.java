@@ -1,5 +1,7 @@
 package Client;
 
+import Paxos.Acceptor;
+import Paxos.Proposer;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.ParseException;
 
@@ -16,8 +18,20 @@ public class Client {
     String username;
 
     Integer player_id;
+
+    // Roles
+    Acceptor acceptor;
+    Proposer proposer;
+    Boolean isKPU;
+
+    // Player Status
+    Boolean isReady;
+    Boolean isStart;
+
+
     public Client(){
         ui = new CommandLineUI();
+        isKPU = false;
     }
 
     public void join(){
@@ -72,6 +86,92 @@ public class Client {
 
     public void run(){
         join();
+        if(isReady && isStart) {
+
+        }
+    }
+
+    public void leave() {
+        boolean retry_leave = false;
+        do{
+            JSONObject server_leave_response;
+            SynchronousTCPJSONClient synchronousTCPJSONClient = new SynchronousTCPJSONClient(serverAddress);
+            try {
+                synchronousTCPJSONClient.connect();
+
+                JSONObject leave_request = new JSONObject();
+                leave_request.put("method","leave");
+                server_leave_response = synchronousTCPJSONClient.call(leave_request);
+
+                String status = (String) server_leave_response.get("status");
+
+                if (status==null){
+                    ui.displayFailedLeave("connection failure: error response from server");
+                    retry_leave = true;
+                }else if (status.equals("ok")){
+                    ui.displaySuccessfulLeave();
+                    isReady = false;
+                    isStart = false;
+                }else if (status.equals("fail")){
+
+                }else if (status.equals("error")){
+                    ui.displayFailedLeave("error: " + server_leave_response.get("description"));
+                    retry_leave=true;
+                }else{
+                    ui.displayFailedLeave("connection failure: error response from server");
+                    retry_leave = true;
+                }
+            } catch (IOException e) {
+                ui.displayFailedReadyUp("connection failure" + e);
+                retry_leave = true;
+            } catch (ParseException e) {
+                ui.displayFailedReadyUp("connection failure" + e);
+                retry_leave = true;
+            }
+        }while (retry_leave);
+    }
+
+    public void readyup() {
+        boolean retry_readyup = false;
+        do{
+            JSONObject server_readyup_response;
+            SynchronousTCPJSONClient synchronousTCPJSONClient = new SynchronousTCPJSONClient(serverAddress);
+            try {
+                synchronousTCPJSONClient.connect();
+
+                JSONObject readyup_request = new JSONObject();
+                readyup_request.put("method","ready");
+                server_readyup_response = synchronousTCPJSONClient.call(readyup_request);
+
+                String status = (String) server_readyup_response.get("status");
+
+                if (status==null){
+                    ui.displayFailedReadyUp("connection failure: error response from server");
+                    retry_readyup = true;
+                }else if (status.equals("ok")){
+                    ui.displaySuccessfulReadyUp();
+                    isReady = true;
+
+                    // Wait until server send start response
+                    String statusStart;
+                   
+                }else if (status.equals("fail")){
+
+                }else if (status.equals("error")){
+                    ui.displayFailedReadyUp("error: " + server_readyup_response.get("description"));
+                    retry_readyup=true;
+                }else{
+                    ui.displayFailedReadyUp("connection failure: error response from server");
+                    retry_readyup = true;
+                }
+            } catch (IOException e) {
+                ui.displayFailedReadyUp("connection failure" + e);
+                retry_readyup = true;
+            } catch (ParseException e) {
+                ui.displayFailedReadyUp("connection failure" + e);
+                retry_readyup = true;
+            }
+        }while (retry_readyup);
     }
 
     public static void main(String [] args){
