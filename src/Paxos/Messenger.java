@@ -94,6 +94,28 @@ public class Messenger {
         //TODO diisi nanti
     }
 
+    public void sendFail(int UID, String description) throws IOException {
+        JSONObject jsonObject = new JSONObject();
+        jsonObject.put("status", "fail");
+        jsonObject.put("description", description);
+        for (ClientInfo clientInfo : listClient){
+            if (clientInfo.getPlayer_id() == UID){
+                sendJSONString(jsonObject,clientInfo);
+            }
+        }
+    }
+
+    public void sendError(int UID, String description) throws IOException {
+        JSONObject jsonObject = new JSONObject();
+        jsonObject.put("status", "error");
+        jsonObject.put("description", description);
+        for (ClientInfo clientInfo : listClient){
+            if (clientInfo.getPlayer_id() == UID){
+                sendJSONString(jsonObject,clientInfo);
+            }
+        }
+    }
+
     //helper
     private void sendJSONString (JSONObject jsonObject, ClientInfo clientInfo) throws IOException {
         String jsonString = jsonObject.toJSONString();

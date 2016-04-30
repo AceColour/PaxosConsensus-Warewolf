@@ -119,7 +119,7 @@ public class PaxosController {
                         receivedMethod = "acceptAccepted";
                     }
             }else {
-                sendErrorMessage(address, port);
+                messenger.sendError(UID, "unknown method");
             }
 
             //next method
@@ -137,15 +137,14 @@ public class PaxosController {
                 continueListening = false;
             }
         } catch (ParseException e) {
-            sendErrorMessage(address,port);
+            try {
+                messenger.sendError(UID, "message error");
+            } catch (IOException e1) {
+                e1.printStackTrace();
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }
-    }
-
-    public void sendErrorMessage(InetAddress address, int port){
-        //TODO kirimkan error
-        //apakah pakai messenger?
     }
 
     public int getUIDFromPortAndInetAddress(InetAddress address, int port){
