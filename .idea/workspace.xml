@@ -2,10 +2,7 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="019801a5-bd63-4c39-8e90-f35c04d54b5c" name="Default" comment="Complete ProposalId, Proposer, and Acceptor skeleton.">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/Paxos/Acceptor.java" afterPath="$PROJECT_DIR$/src/Paxos/Acceptor.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/Paxos/Messenger.java" afterPath="$PROJECT_DIR$/src/Paxos/Messenger.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/Paxos/Proposer.java" afterPath="$PROJECT_DIR$/src/Paxos/Proposer.java" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/Paxos/Learner.java" afterPath="$PROJECT_DIR$/src/Paxos/Learner.java" />
     </list>
     <ignored path="PaxosConsensus-Werewolf.iws" />
     <ignored path=".idea/workspace.xml" />
@@ -47,22 +44,29 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="Acceptor.java" pinned="false" current-in-tab="true">
+      <file leaf-file-name="Acceptor.java" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/Paxos/Acceptor.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="332">
-              <caret line="61" column="39" selection-start-line="61" selection-start-column="39" selection-end-line="61" selection-end-column="39" />
+            <state relative-caret-position="264">
+              <caret line="57" column="29" selection-start-line="57" selection-start-column="29" selection-end-line="57" selection-end-column="29" />
               <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="Learner.java" pinned="false" current-in-tab="false">
+      <file leaf-file-name="Learner.java" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/src/Paxos/Learner.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="51">
-              <caret line="3" column="38" selection-start-line="3" selection-start-column="38" selection-end-line="3" selection-end-column="38" />
-              <folding />
+            <state relative-caret-position="383">
+              <caret line="77" column="19" selection-start-line="77" selection-start-column="19" selection-end-line="77" selection-end-column="19" />
+              <folding>
+                <element signature="e#555#577#0" expanded="true" />
+                <element signature="e#644#664#0" expanded="true" />
+                <element signature="e#921#922#0" expanded="true" />
+                <element signature="e#954#955#0" expanded="true" />
+                <element signature="e#1000#1001#0" expanded="true" />
+                <element signature="e#1038#1039#0" expanded="true" />
+              </folding>
             </state>
           </provider>
         </entry>
@@ -172,10 +176,10 @@
         <option value="$PROJECT_DIR$/src/Client/SynchronousTCPJSONClient.java" />
         <option value="$PROJECT_DIR$/src/Paxos/ProposalID.java" />
         <option value="$PROJECT_DIR$/src/Paxos/ProposalId.java" />
-        <option value="$PROJECT_DIR$/src/Paxos/Learner.java" />
         <option value="$PROJECT_DIR$/src/Paxos/Messenger.java" />
         <option value="$PROJECT_DIR$/src/Paxos/Acceptor.java" />
         <option value="$PROJECT_DIR$/src/Paxos/Proposer.java" />
+        <option value="$PROJECT_DIR$/src/Paxos/Learner.java" />
       </list>
     </option>
   </component>
@@ -818,7 +822,14 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="51">
           <caret line="3" column="38" selection-start-line="3" selection-start-column="38" selection-end-line="3" selection-end-column="38" />
-          <folding />
+          <folding>
+            <element signature="e#555#577#0" expanded="true" />
+            <element signature="e#644#664#0" expanded="true" />
+            <element signature="e#921#922#0" expanded="true" />
+            <element signature="e#954#955#0" expanded="true" />
+            <element signature="e#1000#1001#0" expanded="true" />
+            <element signature="e#1038#1039#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
@@ -1171,14 +1182,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/Paxos/Learner.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="51">
-          <caret line="3" column="38" selection-start-line="3" selection-start-column="38" selection-end-line="3" selection-end-column="38" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/src/Paxos/Messenger.java">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="609">
@@ -1207,9 +1210,24 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/src/Paxos/Acceptor.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="332">
-          <caret line="61" column="39" selection-start-line="61" selection-start-column="39" selection-end-line="61" selection-end-column="39" />
+        <state relative-caret-position="264">
+          <caret line="57" column="29" selection-start-line="57" selection-start-column="29" selection-end-line="57" selection-end-column="29" />
           <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/Paxos/Learner.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="383">
+          <caret line="77" column="19" selection-start-line="77" selection-start-column="19" selection-end-line="77" selection-end-column="19" />
+          <folding>
+            <element signature="e#555#577#0" expanded="true" />
+            <element signature="e#644#664#0" expanded="true" />
+            <element signature="e#921#922#0" expanded="true" />
+            <element signature="e#954#955#0" expanded="true" />
+            <element signature="e#1000#1001#0" expanded="true" />
+            <element signature="e#1038#1039#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
