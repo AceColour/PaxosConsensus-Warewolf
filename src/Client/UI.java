@@ -10,4 +10,13 @@ public interface UI {
     void displaySuccessfulServerJoin();
     void displayFailedServerJoin(String cause);
     String askUsername();
+
+    // Ready Up
+    void displaySuccessfulReadyUp();
+    void displayFailedReadyUp(String cause);
+
+    // Leave
+    void displaySuccessfulLeave();
+    void displayFailedLeave(String cause);
 }
+

@@ -32,7 +32,7 @@ public class CommandLineUI implements UI{
     @Override
     public void displaySuccessfulServerJoin() {
         System.out.println("=====Join Result=====");
-        System.out.println("status: success");
+        System.out.println("status: ok");
     }
 
     @Override
@@ -50,4 +50,34 @@ public class CommandLineUI implements UI{
         Scanner scanIn = new Scanner(System.in);
         return scanIn.nextLine();
     }
+
+    // Ready Up
+    @Override
+    public void displaySuccessfulReadyUp() {
+        System.out.println("=====ReadyUp Result=====");
+        System.out.println("status: ok");
+    }
+
+    @Override
+    public void displayFailedReadyUp(String cause) {
+        System.out.println("=====ReadyUp Result=====");
+        System.out.println("status: failed");
+        System.out.println("cause: " + cause);
+    }
+
+    // Leave
+    // Leave
+    @Override
+    public void displaySuccessfulLeave(){
+        System.out.println("=====ReadyUp Result=====");
+        System.out.println("status: ok");
+    }
+
+    @Override
+    public void displayFailedLeave(String cause){
+        System.out.println("=====ReadyUp Result=====");
+        System.out.println("status: failed");
+        System.out.println("cause: " + cause);
+    }
+
 }
