@@ -56,14 +56,14 @@ public class Proposer {
     }
 
     // Methods: RECEIVE(s)
-    public void receivePromise(int _fromUid, ProposalId _proposalId, ProposalId _prevAcceptedId, int _prevAcceptedValue) {
+    public void receivePromise(int _fromUid, ProposalId _proposalId, ProposalId _prevAcceptedId, int _prevAcceptedValue) throws IOException {
         if (!proposalId.equals(this.proposalId) || promisesReceived.contains(_fromUid)) {
             return;
         }
 
         promisesReceived.add(_fromUid);
 
-        if (lastAcceptedId == null || _prevAcceptedId.isGreaterThan(lastAcceptedId)) {
+        if (lastAcceptedId == null || _prevAcceptedId.getId() > lastAcceptedId.getId()) {
             lastAcceptedId = _prevAcceptedId;
 
             proposedValue = _prevAcceptedValue;
