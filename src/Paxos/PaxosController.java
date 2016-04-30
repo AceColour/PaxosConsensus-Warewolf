@@ -111,13 +111,14 @@ public class PaxosController {
             String receivedMethod = "";
             if (jsonObject.containsKey("method")){
                 receivedMethod = (String) jsonObject.get("method");
-            }else if (jsonObject.containsKey("status")){
-                if (jsonObject.get("status").equals("accepted"))
+            }else if (jsonObject.containsKey("status") && jsonObject.containsKey("description")){
+                if (jsonObject.get("status").equals("ok") && jsonObject.get("description").equals("accepted"))
                     if(jsonObject.containsKey("previous_accepted")){
                         receivedMethod = "promise";
                     }else{
                         receivedMethod = "acceptAccepted";
                     }
+
             }else {
                 messenger.sendError(UID, "unknown method");
             }
