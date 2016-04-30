@@ -6,10 +6,7 @@ import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
 import java.io.IOException;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.net.InetAddress;
-import java.net.SocketException;
+import java.net.*;
 import java.util.List;
 
 /**
@@ -59,36 +56,55 @@ public class PaxosController extends Thread{
     @Override
     public void run(){
         if (thisPlayerId == idTerbesar || thisPlayerId == idKeduaTerbesar)
-            runAsProposer();
+            try {
+                runAsProposer();
+            } catch (SocketException e) {
+                e.printStackTrace();
+            }
         else
-            runAsAcceptor();
+            try {
+                runAsAcceptor();
+            } catch (SocketException e) {
+                e.printStackTrace();
+            }
     }
 
-    public void runAsProposer(){
+    public void runAsProposer() throws SocketException {
         proposer.setProposedValue(thisPlayerId); // cobain pake ini
         proposer.prepare();
         runSisanya();
     }
 
-    public void runAsAcceptor(){
+    public void runAsAcceptor() throws SocketException {
         runSisanya();
     }
 
     private boolean continueListening;
 
-    public void runSisanya() {
+    public void runSisanya() throws SocketException {
         continueListening = true;
         byte [] buf = new byte[65507];
         DatagramPacket message = new DatagramPacket(buf, 65507);
-        while (continueListening && !interrupted()){
+
+        int originalTimeOut = datagramSocket.getSoTimeout();
+        datagramSocket.setSoTimeout(10);
+
+        while (continueListening){
             try {
                 datagramSocket.receive(message);
                 handleMessage(message);
+            } catch (SocketTimeoutException e){
+                //wait whether continueListening
             } catch (IOException e) {
                 e.printStackTrace();
             }
         }
-        datagramSocket.close();
+
+        datagramSocket.setSoTimeout(originalTimeOut);
+    }
+
+    public void stopPaxos(){
+        continueListening = false;
     }
 
     public void handleMessage(DatagramPacket message){
