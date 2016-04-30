@@ -1,4 +1,4 @@
-package Paxos;
+package Client.Paxos;
 
 import java.io.IOException;
 import java.util.HashSet;
@@ -6,7 +6,7 @@ import java.util.HashSet;
 /**
  * Created by erickchandra on 4/25/16.
  *
- * Proposer is a class for implementing Paxos Algorithm.
+ * Proposer is a class for implementing Client.Paxos Algorithm.
  */
 public class Proposer {
     // Attributes

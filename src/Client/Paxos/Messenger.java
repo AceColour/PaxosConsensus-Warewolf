@@ -1,7 +1,7 @@
-package Paxos;
+package Client.Paxos;
 
-import Communications.UnreliableSender;
-import Misc.ClientInfo;
+import Client.Communications.UnreliableSender;
+import Client.Misc.ClientInfo;
 
 import java.io.IOException;
 import java.net.*;

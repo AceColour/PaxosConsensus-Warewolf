@@ -1,11 +1,11 @@
-package Paxos;
+package Client.Paxos;
 
 import java.io.IOException;
 
 /**
  * Created by erickchandra on 4/25/16.
  *
- * Acceptor is a class for implementing Paxos Algorithm.
+ * Acceptor is a class for implementing Client.Paxos Algorithm.
  */
 public class Acceptor {
     // Attributes

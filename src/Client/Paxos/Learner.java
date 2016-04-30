@@ -1,4 +1,4 @@
-package Paxos;
+package Client.Paxos;
 
 import java.util.HashMap;
 

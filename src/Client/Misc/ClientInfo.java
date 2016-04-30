@@ -1,4 +1,4 @@
-package Misc;
+package Client.Misc;
 
 import java.net.InetAddress;
 

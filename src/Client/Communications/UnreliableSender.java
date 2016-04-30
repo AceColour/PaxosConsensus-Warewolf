@@ -1,4 +1,4 @@
-package Communications;
+package Client.Communications;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
