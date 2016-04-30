@@ -7,20 +7,11 @@ import java.net.InetSocketAddress;
  */
 public interface UI {
     InetSocketAddress askServerAddress();
-    void displaySuccessfulServerJoin();
-    void displayFailedServerJoin(String cause);
     String askUsername();
+    int askPortUDP();
 
-    // Ready Up
-    void displaySuccessfulReadyUp();
-    void displayFailedReadyUp(String cause);
-
-    // Leave
-    void displaySuccessfulLeave();
-    void displayFailedLeave(String cause);
-
-    // List Client
-    void displaySuccessfulRetrieveList();
-    void displayFailedRetrieveList(String cause);
+    void displaySuccessfulResponse(String header);
+    void displayFailedResponse(String header, String cause);
+    void displayErrorResponse(String header, String cause);
 }
 
