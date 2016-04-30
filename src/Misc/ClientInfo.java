@@ -13,6 +13,9 @@ public class ClientInfo {
     private String username;
     private String role;
 
+
+    // Constructor
+
     public ClientInfo(int player_id, int is_alive, InetAddress address, int port, String username, String role){
         this.player_id = player_id;
         this.is_alive = is_alive;
@@ -22,48 +25,54 @@ public class ClientInfo {
         this.role = role;
     }
 
+
+    // Getter
+
     public int getPlayer_id() {
         return player_id;
-    }
-
-    public void setPlayer_id(int player_id) {
-        this.player_id = player_id;
     }
 
     public int getIs_alive() {
         return is_alive;
     }
 
-    public void setIs_alive(int is_alive) {
-        this.is_alive = is_alive;
-    }
-
     public InetAddress getAddress() {
         return address;
-    }
-
-    public void setAddress(InetAddress address) {
-        this.address = address;
     }
 
     public int getPort() {
         return port;
     }
 
-    public void setPort(int port) {
-        this.port = port;
-    }
-
     public String getUsername() {
         return username;
     }
 
-    public void setUsername(String username) {
-        this.username = username;
-    }
-
     public String getRole() {
         return role;
+    }
+
+
+    // Setter
+
+    public void setPlayer_id(int player_id) {
+        this.player_id = player_id;
+    }
+
+    public void setIs_alive(int is_alive) {
+        this.is_alive = is_alive;
+    }
+
+    public void setAddress(InetAddress address) {
+        this.address = address;
+    }
+
+    public void setPort(int port) {
+        this.port = port;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
     }
 
     public void setRole(String role) {
