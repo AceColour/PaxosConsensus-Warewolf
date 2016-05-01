@@ -137,6 +137,14 @@ public class CommandLineUI implements UI{
     }
 
     @Override
+    public void displayPlayerKilled(ClientInfo clientInfo) {
+        System.out.println("");
+        System.out.println("Player Killed: " +clientInfo.getPlayerId() + "\t" + clientInfo.getUsername());
+        if (clientInfo.getRole()!=null)
+            System.out.println("\t" + clientInfo.getRole() );
+    }
+
+    @Override
     public int askReadyOrLeave() {
         System.out.println("1: ready");
         System.out.println("0: leave");

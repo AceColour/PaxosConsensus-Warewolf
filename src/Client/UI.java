@@ -27,6 +27,8 @@ public interface UI {
     void displayErrorConnecting(InetSocketAddress inetSocketAddress);
     void displayGameStart(Object time, Object role, Object friend);
 
+    void displayPlayerKilled(ClientInfo clientInfo);
+
     /**
      * mengembalikan 0 bila leave, 1 bila ready
      * */

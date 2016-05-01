@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.net.*;
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 
 import static java.net.InetAddress.*;
@@ -387,8 +388,8 @@ public class Client {
             } else if(status.equals("ok")){
                 ui.displaySuccessfulResponse("Retrieve List Client");
 
-                // Clear list player
-                listPlayer.clear();
+                //create new listPlayer
+                List<ClientInfo> listPlayer2 = new LinkedList<ClientInfo>();
 
                 // Iterating client's array
                 JSONArray slideContent = (JSONArray) listClientResponse.get("clients");
@@ -399,7 +400,7 @@ public class Client {
                     JSONObject clientJSON = (JSONObject) i.next();
 
                     // Add client to list Player
-                    listPlayer.add(new ClientInfo(
+                    listPlayer2.add(new ClientInfo(
                             Integer.parseInt (clientJSON.get("player_id").toString()),
                             Integer.parseInt (clientJSON.get("is_alive").toString()),
                             getByName((String)clientJSON.get("address")),
@@ -407,6 +408,26 @@ public class Client {
                             (String)clientJSON.get("username")
                     ));
                 }
+
+                // Cari apakah ada player terbunuh
+                for (ClientInfo newClientInfo : listPlayer2){
+                    for (ClientInfo oldClientInfo : listPlayer){
+                        if (newClientInfo.getPlayerId() == oldClientInfo.getPlayerId()){
+                            ui.displayPlayerKilled(newClientInfo);
+                            if (newClientInfo.getPlayerId() == playerInfo.getPlayerId()){
+                                playerInfo.setIsAlive(0);
+                            }
+                        }
+                    }
+                }
+
+                // Clear list player
+                listPlayer.clear();
+                //copy listPlayer
+                for (ClientInfo newClientInfo: listPlayer2){
+                    listPlayer.add(newClientInfo);
+                }
+                listPlayer2.clear();
 
                 ui.displayListClient(listPlayer);
 
