@@ -235,7 +235,7 @@ public class Client {
 
                     ui.displayGameStart(time, role, friend);
 
-                    isDay = time=="day";
+                    isDay = time.equals("day");
                     isStart = true;
                 }else{
                     response.put("status", "fail");
