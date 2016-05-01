@@ -56,6 +56,27 @@ public class CommandLineUI implements UI{
         return scanIn.nextInt();
     }
 
+    // Voting handler
+    @Override
+    public int killWerewolfId(){
+        System.out.println("=======         WEREWOLF       ======");
+        System.out.println("=====Vote Player Id  to be killed====");
+        System.out.print("Player Id=: ");
+
+        Scanner scanIn = new Scanner(System.in);
+        return scanIn.nextInt();
+    }
+
+    @Override
+    public int killCivilianId(){
+        System.out.println("=======         CIVILIAN       ======");
+        System.out.println("=====Vote Player Id suspected as Werewolf to be killed====");
+        System.out.print("Player Id=: ");
+
+        Scanner scanIn = new Scanner(System.in);
+        return scanIn.nextInt();
+    }
+
     @Override
     public void displaySuccessfulResponse(String header){
         System.out.println("=====" + header + " Result=====");
