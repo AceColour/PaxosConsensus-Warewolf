@@ -1,7 +1,12 @@
 package GamePlay;
 
+import Server.Server;
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
+
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 
 /**
  * Created by erickchandra on 4/30/16.
@@ -17,6 +22,9 @@ public class Game {
     private HashSet playerLeft = new HashSet();
     boolean startedStatus = false;
     boolean dayStatus = false; // True: Day; False: Night.
+    int dayCount = 0;
+
+    private List<Server> serverList;
 
     // Methods
     // Getter
@@ -32,12 +40,28 @@ public class Game {
         return playerConnected;
     }
 
+    public HashSet getPlayerReady() {
+        return playerReady;
+    }
+
     public boolean getStartedStatus() {
         return startedStatus;
     }
 
     public boolean getDayStatus() {
         return dayStatus;
+    }
+
+    public int getDayCount() {
+        return dayCount;
+    }
+
+    public List<Server> getServerList() {
+        return serverList;
+    }
+
+    public void addServerList(Server server) {
+        serverList.add(server);
     }
 
     // Other methods
@@ -161,7 +185,42 @@ public class Game {
     }
 
     public boolean changeDay() {
+        if (this.dayStatus == false) {
+            dayCount++;
+        }
         this.dayStatus = !this.dayStatus;
         return dayStatus;
+    }
+
+    public void sendBroadcast(String strSend) {
+        for (Server server : serverList) {
+            server.send(server.getClientSocket(), strSend);
+        }
+    }
+
+    public void sendStartGameBroadcast() {
+
+        for (Server server : serverList) {
+            JSONObject jsonObject = new JSONObject();
+            jsonObject.put("method", "start");
+            jsonObject.put("time", "night");
+            jsonObject.put("role", server.isWerewolf ? "werewolf" : "civilian");
+            if (server.isWerewolf) {
+                JSONArray jsonArray = new JSONArray();
+                Iterator<Player> iterator = playerWerewolfActiveList.iterator();
+                Player playerIterator;
+                while (iterator.hasNext()) {
+                    playerIterator = iterator.next();
+                    if (!playerIterator.getUsername().equals(server.username)) {
+                        jsonArray.add(playerIterator.getUsername());
+                    }
+                }
+                jsonObject.put("friends", jsonArray);
+            }
+            else {
+                jsonObject.put("friends", "");
+            }
+            jsonObject.put("description", "game is started");
+        }
     }
 }

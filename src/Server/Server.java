@@ -25,9 +25,9 @@ public class Server extends Thread {
     private int udpPortNumber;
     private int playerId;
     private static JSONArray kpuProposalJSON = null;
-    private static int voteDayNotDecidedCount;
-    private boolean isWerewolf = false;
-    private String username;
+    private static int voteDayNotDecidedCount = 0;
+    public boolean isWerewolf = false;
+    public String username;
     private boolean aliveStatus = true;
 
     private static List<Server> serverList;
@@ -39,6 +39,10 @@ public class Server extends Thread {
     public Server(Socket _clientSocket) {
         this.clientSocket = _clientSocket;
         start();
+    }
+
+    public Socket getClientSocket() {
+        return clientSocket;
     }
 
     public int receiveJoin(String _ipAddr, int _portNo, String _username) {
@@ -109,7 +113,6 @@ public class Server extends Thread {
                 if (game.getPlayerReady().size() == game.getPlayerConnected().size() && game.getPlayerReady().size() >= 6) {
                     game.startGame();
 
-                    // Random player role
 
 //                    boolean werewolfRole;
 //                    int randomNum = (int) Math.random();
@@ -258,7 +261,15 @@ public class Server extends Thread {
 
                 }
                 else { // In the day time, civilian is only restricted to vote only max 2 times. Otherwise, change day
+                    if (voteDayNotDecidedCount < 2) {
+                        voteDayNotDecidedCount++;
+                        // Resend to vote
 
+                    }
+                    else {
+                        // Forcing change day
+
+                    }
                 }
             }
             // EXCEPTIONAL UNKNOWN PROTOCOL
@@ -357,7 +368,9 @@ public class Server extends Thread {
             try {
                 socket = serverSocket.accept();
                 System.out.println("ACCEPTED NEW CONNECTION from " + socket);
-                serverList.add(new Server(socket));
+                Server newServer = new Server(socket);
+                serverList.add(newServer);
+                game.addServerList(newServer);
             } catch (IOException e) {
                 e.printStackTrace();
             }
