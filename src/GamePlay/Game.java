@@ -4,14 +4,16 @@ import Server.Server;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
+import java.io.IOException;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Random;
 
 /**
  * Created by erickchandra on 4/30/16.
  */
-public class Game {
+public class Game extends Thread{
     // Attributes
     private HashSet playerCitizenActiveList = new HashSet();
     private HashSet playerWerewolfActiveList = new HashSet();
@@ -23,8 +25,6 @@ public class Game {
     boolean startedStatus = false;
     boolean dayStatus = false; // True: Day; False: Night.
     int dayCount = 0;
-
-    private List<Server> serverList;
 
     // Methods
     // Getter
@@ -56,14 +56,6 @@ public class Game {
         return dayCount;
     }
 
-    public List<Server> getServerList() {
-        return serverList;
-    }
-
-    public void addServerList(Server server) {
-        serverList.add(server);
-    }
-
     // Other methods
     public void addCitizen(Player _player) {
         this.playerCitizenActiveList.add(_player);
@@ -80,7 +72,7 @@ public class Game {
         while (!found && iterator.hasNext()) {
             currentPlayerIterator = iterator.next();
             if (currentPlayerIterator.getPlayerId() == _playerId) {
-                this.playerCitizenDeadList.add(new Player(currentPlayerIterator.getIpAddress(), currentPlayerIterator.getPortNumber(), currentPlayerIterator.getPlayerId(), currentPlayerIterator.getUsername(), false));
+                this.playerCitizenDeadList.add(currentPlayerIterator);
                 found = true;
                 iterator.remove();
 
@@ -101,7 +93,7 @@ public class Game {
         while (!found && iterator.hasNext()) {
             currentPlayerIterator = iterator.next();
             if (currentPlayerIterator.getPlayerId() == _playerId) {
-                this.playerWerewolfDeadList.add(new Player(currentPlayerIterator.getIpAddress(), currentPlayerIterator.getPortNumber(), currentPlayerIterator.getPlayerId(), currentPlayerIterator.getUsername(), false));
+                this.playerWerewolfDeadList.add(currentPlayerIterator);
                 found = true;
                 iterator.remove();
 
@@ -121,25 +113,28 @@ public class Game {
 
     public void startGame() {
         this.startedStatus = true;
+        assignRoles();
+        sendStartGameBroadcast();
     }
 
-    public void clientConnect(Player _player) {
+    public synchronized void clientConnect(Player _player) {
         this.playerConnected.add(_player);
     }
 
-    public void clientReady(String _ipAddr, int _portNo) {
+    public synchronized void clientReady(String _ipAddr, int _portNo) {
         Iterator<Player> iteratorPlayerConnected = playerConnected.iterator();
         Player currentPlayerConnectedIterator;
         boolean foundPlayerConnected = false;
-        while (foundPlayerConnected && iteratorPlayerConnected.hasNext()) {
+        while (!foundPlayerConnected && iteratorPlayerConnected.hasNext()) {
             currentPlayerConnectedIterator = iteratorPlayerConnected.next();
             if (currentPlayerConnectedIterator.getIpAddress().equals(_ipAddr) && currentPlayerConnectedIterator.getPortNumber() == _portNo) {
-                this.playerReady.add(new Player(currentPlayerConnectedIterator.getIpAddress(), currentPlayerConnectedIterator.getPortNumber(), currentPlayerConnectedIterator.getPlayerId(), currentPlayerConnectedIterator.getUsername(), true));
+                this.playerReady.add(currentPlayerConnectedIterator);
+                foundPlayerConnected = true;
             }
         }
     }
 
-    public int clientLeave(String _ipAddr, int _portNo) {
+    public synchronized int clientLeave(String _ipAddr, int _portNo) {
         // Returns 0: no error
         // Returns 1: game is playing
 
@@ -154,12 +149,18 @@ public class Game {
             while (!found && iterator.hasNext()) {
                 currentPlayerIterator = iterator.next();
                 if (currentPlayerIterator.getIpAddress().equals(_ipAddr) && currentPlayerIterator.getPortNumber() == _portNo) {
-                    this.playerLeft.add(new Player(currentPlayerIterator.getIpAddress(), currentPlayerIterator.getPortNumber(), currentPlayerIterator.getPlayerId(), currentPlayerIterator.getUsername(), false));
+                    this.playerLeft.add(iterator);
 
                     iterator.remove();
+
+                    //also search from playerReady
+                    if (playerReady.contains(currentPlayerIterator))
+                        playerReady.remove(currentPlayerIterator);
+
                     found = true;
                 }
             }
+
 
             return 0;
         }
@@ -167,6 +168,10 @@ public class Game {
 
     public boolean isPlayerReadyEqualsPlayerConnected() {
         return (this.playerReady.size() == this.playerConnected.size());
+    }
+
+    public boolean startCondition(){
+        return playerConnected.size() >=6 && isPlayerReadyEqualsPlayerConnected();
     }
 
     public boolean isUsernameExists(String _username) {
@@ -194,27 +199,90 @@ public class Game {
 
     public void sendStartGameBroadcast() {
 
-        for (Server server : serverList) {
-            JSONObject jsonObject = new JSONObject();
-            jsonObject.put("method", "start");
-            jsonObject.put("time", "night");
-            jsonObject.put("role", server.isWerewolf ? "werewolf" : "civilian");
-            if (server.isWerewolf) {
+        for (Object playerObject : playerConnected) {
+            Player player = (Player) playerObject;
+            JSONObject request = new JSONObject();
+            request.put("method", "start");
+            request.put("time", "night");
+            request.put("role", player.getRole());
+            if (player.getRole().equals("werewolf")) {
                 JSONArray jsonArray = new JSONArray();
                 Iterator<Player> iterator = playerWerewolfActiveList.iterator();
                 Player playerIterator;
                 while (iterator.hasNext()) {
                     playerIterator = iterator.next();
-                    if (!playerIterator.getUsername().equals(server.username)) {
+                    if (!playerIterator.getUsername().equals(player.getUsername())) {
                         jsonArray.add(playerIterator.getUsername());
                     }
                 }
-                jsonObject.put("friends", jsonArray);
+                request.put("friends", jsonArray);
             }
-            else {
-                jsonObject.put("friends", "");
+            request.put("description", "game is started");
+
+            try {
+                JSONObject response = player.getCommunicator().sendRequestAndGetResponse(request);
+                System.out.println("send start game request to player " + player.getPlayerId() + ". response: ");
+                System.out.println(response.toJSONString());
+            } catch (IOException e) {
+                e.printStackTrace();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
-            jsonObject.put("description", "game is started");
         }
+    }
+
+    public synchronized void assignRoles(){
+        int jatahWerewolf = 2;
+        int jatahCivilian = getPlayerConnected().size() - jatahWerewolf;
+
+        Random random = new Random();
+
+        for (Object playerObject : playerConnected){
+            String role = null;
+
+            Player player = (Player) playerObject;
+
+            if (jatahWerewolf > 0 && jatahCivilian > 0){
+                int randomNumber = random.nextInt(2);
+                if (randomNumber==0){
+                    role = "werewolf";
+                    addWerewolf(player);
+                    jatahWerewolf--;
+                }else{
+                    role = "civilian";
+                    addCitizen(player);
+                    jatahCivilian--;
+                }
+            }else if (jatahWerewolf > 0){
+                role = "werewolf";
+                addWerewolf(player);
+                jatahWerewolf--;
+            }else if (jatahCivilian > 0){
+                role = "civilian";
+                addCitizen(player);
+                jatahCivilian--;
+            }
+
+            player.setRole(role);
+        }
+    }
+
+    private void waitNumPlayersReady(){
+
+        System.out.println("waiting players");
+
+        while (!startCondition()){
+            try {
+                sleep(1);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    @Override
+    public void run(){
+        waitNumPlayersReady();
+        startGame();
     }
 }

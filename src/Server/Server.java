@@ -26,7 +26,6 @@ public class Server extends Thread {
     private int playerId;
     private static JSONArray kpuProposalJSON = null;
     private static int voteDayNotDecidedCount = 0;
-    public boolean isWerewolf = false;
     public String username;
     private boolean aliveStatus = true;
 
@@ -59,7 +58,7 @@ public class Server extends Thread {
             return -2;
         }
         else {
-            game.clientConnect(new Player(_ipAddr, _portNo, ++currentLastPlayerId, _username, true));
+            game.clientConnect(new Player(_ipAddr, _portNo, ++currentLastPlayerId, _username, true, communicator));
             return currentLastPlayerId;
         }
     }
@@ -88,21 +87,26 @@ public class Server extends Thread {
 
                 // [OK] PROTOCOL NO. 1
                 if (request.get("method").equals("join")) {
-                    this.udpIpAddress = request.get("udp_address").toString();
-                    this.udpPortNumber = Integer.parseInt(request.get("udp_port").toString());
-                    this.username = request.get("username").toString();
-                    this.aliveStatus = true;
-                    this.playerId = this.receiveJoin(request.get("udp_address").toString(), Integer.parseInt(request.get("udp_port").toString()), request.get("username").toString());
                     JSONObject response = new JSONObject();
-                    if (this.playerId>=0){
-                        response.put("status", "ok");
-                        response.put("player_id", this.playerId);
-                    }else if (this.playerId==-1){
-                        response.put("status", "fail");
-                        response.put("description","username exists");
-                    }else /*this.playerId==-2*/{
-                        response.put("status", "fail");
-                        response.put("description","game already started");
+                    if (request.containsKey("udp_port") && request.containsKey("udp_address") && request.containsKey("username")){
+                        this.udpIpAddress = request.get("udp_address").toString();
+                        this.udpPortNumber = Integer.parseInt(request.get("udp_port").toString());
+                        this.username = request.get("username").toString();
+                        this.aliveStatus = true;
+                        this.playerId = this.receiveJoin(request.get("udp_address").toString(), Integer.parseInt(request.get("udp_port").toString()), request.get("username").toString());
+                        if (this.playerId>=0){
+                            response.put("status", "ok");
+                            response.put("player_id", this.playerId);
+                        }else if (this.playerId==-1){
+                            response.put("status", "fail");
+                            response.put("description","username exists");
+                        }else /*this.playerId==-2*/{
+                            response.put("status", "fail");
+                            response.put("description","game already started");
+                        }
+                    }else{
+                        response.put("status","error");
+                        response.put("description","required parameter not found");
                     }
                     communicator.sendResponseKeSeberangSana(response);
 
@@ -114,6 +118,8 @@ public class Server extends Thread {
                     response.put("status", "ok");
                     response.put("description", "waiting for other player to start");
                     communicator.sendResponseKeSeberangSana(response);
+
+                    receiveReady(this.udpIpAddress, this.udpPortNumber);
 
 
                 }
@@ -276,6 +282,9 @@ public class Server extends Thread {
             e.printStackTrace();
         }
 
+        game.start();
+        serverList = new LinkedList<Server>();
+
         while (true) {
             System.out.println("LISTENING NEW CONNECTION...");
             Socket socket = null;
@@ -284,7 +293,6 @@ public class Server extends Thread {
                 System.out.println("ACCEPTED NEW CONNECTION from " + socket);
                 Server newServer = new Server(socket);
                 serverList.add(newServer);
-                game.addServerList(newServer);
             } catch (IOException e) {
                 e.printStackTrace();
             }

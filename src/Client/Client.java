@@ -67,20 +67,19 @@ public class Client {
 
     public void join() throws IOException {
 
-        // Set username
-        playerInfo.setUsername(ui.askUsername());
-
         // Variable to determine request whether ok or not
         Boolean retryRequest = false;
 
-        // Create JSON Object for join request
-        JSONObject joinRequest = new JSONObject();
-        joinRequest.put("method", "join");
-        joinRequest.put("username", playerInfo.getUsername());
-        joinRequest.put("udp_address", UDPAddress.getAddress().toString());
-        joinRequest.put("udp_port", UDPAddress.getPort());
-
         do {
+            playerInfo.setUsername(ui.askUsername());
+
+            // Create JSON Object for join request
+            JSONObject joinRequest = new JSONObject();
+            joinRequest.put("method", "join");
+            joinRequest.put("username", playerInfo.getUsername());
+            joinRequest.put("udp_address", UDPAddress.getAddress().toString());
+            joinRequest.put("udp_port", UDPAddress.getPort());
+
             // Get JSON Object as join response from server
             JSONObject joinResponse = null;
             try {
@@ -101,7 +100,8 @@ public class Client {
                 playerInfo.setPlayerId(Integer.parseInt(joinResponse.get("player_id").toString()));
                 retryRequest = false;
             } else if(status.equals("fail")) {
-                ui.displayFailedResponse("Join", "connection failure: error response from server");
+                ui.displayFailedResponse("Join", "failure: response from server: "
+                        + (joinResponse.containsKey("description") ? joinResponse.get("description") : ""));
                 retryRequest = true;
             } else if(status.equals("error")){
                 ui.displayErrorResponse("Join", "error: " + joinResponse.get("description"));
@@ -283,8 +283,9 @@ public class Client {
                 playerInfo.setIsAlive(0);
                 System.exit(0);
             } else if(status.equals("fail")) {
-                ui.displayFailedResponse("Leave", "connection failure: error response from server");
-                retryRequest = true;
+                ui.displayFailedResponse("Leave", "failure: response from server: "
+                        + (leaveResponse.containsKey("description") ? leaveResponse.get("description") : ""));
+                retryRequest = false;
             } else if(status.equals("error")){
                 ui.displayErrorResponse("Leave", "error: " + leaveResponse.get("description"));
                 retryRequest = true;
