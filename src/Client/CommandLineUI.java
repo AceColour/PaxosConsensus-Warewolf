@@ -116,6 +116,8 @@ public class CommandLineUI implements UI{
             System.out.print(""+clientInfo.getPlayerId() + "\t" + clientInfo.getIsAlive() + "\t" + clientInfo.getUsername());
             if (clientInfo.getRole()!=null)
                 System.out.println("\t" + clientInfo.getRole() );
+            else
+                System.out.println("");
         }
     }
 
