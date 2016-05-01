@@ -490,7 +490,7 @@ public class Client {
         if (isKPU){
             try {
                 voteListener = new VoteListener(listPlayer, playerInfo.getPlayerId(), datagramSocket, isDay);
-                voteListener.run();
+                voteListener.start();
             } catch (SocketException e) {
                 e.printStackTrace();
             }

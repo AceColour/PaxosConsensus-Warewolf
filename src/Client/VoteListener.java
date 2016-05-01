@@ -156,6 +156,7 @@ public class VoteListener extends Thread{
     public int getRemainingWerewolf() {
         int count = 2;
         for(ClientInfo ci : clientList){
+            if (ci.getRole()!=null)
             if(ci.getRole().equals("werewolf")){
                 count--;
             }
