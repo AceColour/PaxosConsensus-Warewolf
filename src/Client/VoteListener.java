@@ -34,6 +34,8 @@ public class VoteListener extends Thread{
      */
     public VoteListener(List<ClientInfo> clientList, int thisPlayerId, DatagramSocket datagramSocket, Boolean isDay) throws SocketException {
         super();
+        this.thisPlayerId = thisPlayerId;
+        this.datagramSocket = datagramSocket;
         this.isDay = isDay;
         this.clientList = new ArrayList<ClientInfo>(clientList);
         this.hasVotedId = new ArrayList<Integer>();
@@ -66,7 +68,7 @@ public class VoteListener extends Thread{
                 if(voteResult.size() >= clientList.size() && isDay){
                     continueListening = false;
                     break;
-                }else if(voteResult.size() >= 2 && !isDay) {
+                }else if(voteResult.size() >= getRemainingWerewolf() && !isDay) {
                     continueListening = false;
                     break;
                 }
@@ -149,5 +151,15 @@ public class VoteListener extends Thread{
                 return clientInfo.getPlayerId();
         }
         return -1;
+    }
+
+    public int getRemainingWerewolf() {
+        int count = 2;
+        for(ClientInfo ci : clientList){
+            if(ci.getRole().equals("werewolf")){
+                count--;
+            }
+        }
+        return count;
     }
 }
