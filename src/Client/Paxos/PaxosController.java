@@ -40,6 +40,10 @@ public class PaxosController extends Thread{
     public PaxosController(List<ClientInfo> clientList, int thisPlayerId, DatagramSocket datagramSocket) throws SocketException {
         super();
 
+        this.datagramSocket = datagramSocket;
+        this.clientList = clientList;
+        this.thisPlayerId = thisPlayerId;
+
         //hitung dua client id terbesar
         idTerbesar = 0;
         idKeduaTerbesar = 0;
@@ -51,7 +55,6 @@ public class PaxosController extends Thread{
                 idKeduaTerbesar = clientInfo.getPlayerId();
         }
 
-        this.thisPlayerId = thisPlayerId;
         messenger = new Messenger(clientList,idTerbesar,idKeduaTerbesar,datagramSocket, tcpRequestResponseChannel);
         acceptor = new Acceptor();
         acceptor.messenger = messenger;
