@@ -59,6 +59,27 @@ public class CommandLineUI implements UI{
         return scanIn.nextInt();
     }
 
+    // Voting handler
+    @Override
+    public int killWerewolfId(){
+        System.out.println("=======         WEREWOLF       ======");
+        System.out.println("=====Vote Player Id  to be killed====");
+        System.out.print("Player Id=: ");
+
+        Scanner scanIn = new Scanner(System.in);
+        return scanIn.nextInt();
+    }
+
+    @Override
+    public int killCivilianId(){
+        System.out.println("=======         CIVILIAN       ======");
+        System.out.println("=====Vote Player Id suspected as Werewolf to be killed====");
+        System.out.print("Player Id=: ");
+
+        Scanner scanIn = new Scanner(System.in);
+        return scanIn.nextInt();
+    }
+
     @Override
     public void displaySuccessfulResponse(String header){
         System.out.println("=====" + header + " Result=====");
@@ -134,8 +155,10 @@ public class CommandLineUI implements UI{
     }
 
     @Override
-    public void askLeaveWhileWaiting() {
+    public Boolean askLeaveWhileWaiting() {
         System.out.println("waiting... type LEAVE followed by enter newline to leave the game");
-        System.out.println("LEAVE NOT IMPLEMENTED. sorry");
+        Scanner scanIn = new Scanner(System.in);
+        String result = scanIn.nextLine();
+        return result.equals("leave");
     }
 }

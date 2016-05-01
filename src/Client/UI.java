@@ -13,6 +13,8 @@ public interface UI {
     String askUsername();
     int askPortUDP();
     int askKPUId();
+    int killWerewolfId();
+    int killCivilianId();
 
     void displaySuccessfulResponse(String header);
     void displayFailedResponse(String header, String cause);
@@ -30,6 +32,6 @@ public interface UI {
      * */
     int askReadyOrLeave();
 
-    void askLeaveWhileWaiting();
+    Boolean askLeaveWhileWaiting();
 }
 

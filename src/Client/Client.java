@@ -3,6 +3,7 @@ package Client;
 
 import Client.Communications.TCPRequestResponseChannel;
 import Client.Misc.ClientInfo;
+import Client.Paxos.Messenger;
 import Client.Paxos.PaxosController;
 import jdk.nashorn.internal.parser.JSONParser;
 import org.json.simple.JSONArray;
@@ -38,6 +39,8 @@ public class Client {
     private int daysCount;
 
     private int numPlayer;
+
+    DatagramSocket datagramSocket;
 
     // Paxos Controller
     PaxosController paxosController;
@@ -141,6 +144,7 @@ public class Client {
     public void run() throws IOException, InterruptedException {
         // Get UDP Port
         int port =  ui.askPortUDP();
+
         try {
             UDPAddress = new InetSocketAddress(
                     getLocalHost().getHostAddress(),
@@ -149,6 +153,9 @@ public class Client {
         } catch (UnknownHostException e) {
             e.printStackTrace();
         }
+
+        // Initialization socket value
+        datagramSocket = new DatagramSocket(UDPAddress.getPort());
 
         // Debug
         System.out.println(getLocalHost().getHostAddress() + ":" + port) ;
@@ -191,7 +198,8 @@ public class Client {
     }
 
     public void waitForStart() {
-        ui.askLeaveWhileWaiting(); //TODO ini belum diimplementasi. nanti tolong diimplementasi
+        Boolean isLeave;
+        isLeave = ui.askLeaveWhileWaiting();
 
         isStart = false;
         do{
@@ -409,10 +417,9 @@ public class Client {
 
     int kpu_id;
 
-    DatagramSocket datagramSocket;
+
     //TODO refactor ini
     public void play() throws IOException, InterruptedException {
-        datagramSocket = new DatagramSocket(UDPAddress.getPort());
         gameOver = false;
 
 
@@ -519,6 +526,41 @@ public class Client {
                 e.printStackTrace();
             }
         }
+    }
+    /* VOTING */
+
+    public void voteKillWerewolf(int playerId) {
+        if(playerInfo.getRole().equals("werewolf") && !isDay){
+            // Create JSON Object for killWerewolf request
+            JSONObject killWerewolfRequest = new JSONObject();
+            killWerewolfRequest.put("method", "vote_werewolf");
+            killWerewolfRequest.put("player_id", ui.killWerewolfId());
+
+            Messenger.sendJSONObject(killWerewolfRequest, datagramSocket, getSocketAddressFromPlayerId(playerId));
+        }
+    }
+
+    public void voteKillCivilian(int playerId) {
+        if(playerInfo.getRole().equals("civilian") && isDay){
+
+            // Create JSON Object for killWerewolf request
+            JSONObject killCivilianRequest = new JSONObject();
+            killCivilianRequest.put("method", "vote_civilian");
+            killCivilianRequest.put("player_id", ui.killCivilianId());
+
+            Messenger.sendJSONObject(killCivilianRequest, datagramSocket, getSocketAddressFromPlayerId(playerId));
+        }
+    }
+
+    public InetSocketAddress getSocketAddressFromPlayerId(int playerId) {
+        for (ClientInfo clientInfo: listPlayer){
+            if (clientInfo.getPlayerId() == playerId){
+                InetSocketAddress inetSocketAddress = new InetSocketAddress(
+                        clientInfo.getAddress(),
+                        clientInfo.getPort());
+            }
+        }
+        return null;
     }
 
     public static void main(String [] args) throws IOException, InterruptedException {
