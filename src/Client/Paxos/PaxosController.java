@@ -1,6 +1,5 @@
 package Client.Paxos;
 
-import Client.CommandLineUI;
 import Client.Communications.TCPRequestResponseChannel;
 import Client.Misc.ClientInfo;
 import org.json.simple.JSONObject;
@@ -10,6 +9,7 @@ import org.json.simple.parser.ParseException;
 import java.io.IOException;
 import java.net.*;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -50,7 +50,9 @@ public class PaxosController extends Thread{
         for (ClientInfo clientInfo: clientList){
             if (clientInfo.getPlayerId()>idTerbesar)
                 idTerbesar = clientInfo.getPlayerId();
-            else if (clientInfo.getPlayerId()>idKeduaTerbesar)
+        }
+        for (ClientInfo clientInfo : clientList){
+            if (clientInfo.getPlayerId()>idKeduaTerbesar && clientInfo.getPlayerId()!=idTerbesar)
                 idKeduaTerbesar = clientInfo.getPlayerId();
         }
 
@@ -154,14 +156,14 @@ public class PaxosController extends Thread{
 
             //next method
             //TODO kasih kapan harus berhenti
-            if (receivedMethod.equals("prepare")){
-                acceptor.receivePrepare(UID, new ProposalId((List<Integer>) jsonObject.get("proposal_id")));
-            } else if (receivedMethod.equals("accept")) {
-                acceptor.receiveAccept(UID, new ProposalId((List<Integer>) jsonObject.get("proposal_id")), (Integer) jsonObject.get("kpu_id"));
+            if (receivedMethod.equals("prepare_proposal")){
+                acceptor.receivePrepare(UID, new ProposalId((List<Long>) jsonObject.get("proposal_id")));
+            } else if (receivedMethod.equals("accept_proposal")) {
+                acceptor.receiveAccept(UID, new ProposalId((List<Long>) jsonObject.get("proposal_id")), (Integer) jsonObject.get("kpu_id"));
             } else if (receivedMethod.equals("promise")){
-                proposer.receivePromise(UID, new ProposalId((List<Integer>) jsonObject.get("proposal_id")),
+                proposer.receivePromise(UID, null, //ProposalId gak kepake
                         new ProposalId(-1,-1) /*TODO apakah ganti yang bener atau gimana, soalnya di protokol yang dari spek ngga ada ini*/,
-                        (Integer) jsonObject.get("previous_accepted"));
+                        Integer.parseInt (jsonObject.get("previous_accepted").toString()));
             }else if (receivedMethod.equals("acceptAccepted")){
                 proposer.receiveAccepted();
                 continueListening = false;
@@ -182,7 +184,8 @@ public class PaxosController extends Thread{
 
     public int getUIDFromPortAndInetAddress(InetAddress address, int port){
         for (ClientInfo clientInfo: clientList){
-            if (clientInfo.getAddress().equals(address) && clientInfo.getPort() == port)
+            if ((Arrays.equals(clientInfo.getAddress().getAddress(), address.getAddress())
+                )&& clientInfo.getPort() == port)
                 return clientInfo.getPlayerId();
         }
         return -1;

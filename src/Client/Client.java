@@ -156,7 +156,7 @@ public class Client {
         }
 
         // Initialization socket value
-        datagramSocket = new DatagramSocket(UDPAddress.getPort());
+        datagramSocket = new DatagramSocket(UDPAddress.getPort(),UDPAddress.getAddress());
 
         // Debug
         System.out.println(getLocalHost().getHostAddress() + ":" + port) ;

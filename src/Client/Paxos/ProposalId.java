@@ -1,5 +1,6 @@
 package Client.Paxos;
 
+import java.util.LinkedList;
 import java.util.List;
 
 /**
@@ -12,9 +13,9 @@ public class ProposalId {
     protected int id;
     private int playerId;
 
-    public ProposalId(List<Integer> playerIDListFromSpekYangAnehBanget ){
-        this.id = playerIDListFromSpekYangAnehBanget.get(0);
-        this.playerId = playerIDListFromSpekYangAnehBanget.get(1);
+    public ProposalId(List<Long> playerIDListFromSpekYangAnehBanget ){
+        this.id = playerIDListFromSpekYangAnehBanget.get(0).intValue();
+        this.playerId = playerIDListFromSpekYangAnehBanget.get(1).intValue();
     }
 
     // Constructor
