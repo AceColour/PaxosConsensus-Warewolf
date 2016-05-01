@@ -106,9 +106,8 @@ public class TCPRequestResponseChannel extends Thread{
                     }
                     message = "";
                 } catch (ParseException e) {
-                    e.printStackTrace();
                 } catch (InterruptedException e) {
-                    e.printStackTrace();
+                } catch (ClassCastException e){
                 }
             }
         } catch (IOException e) {
