@@ -98,14 +98,6 @@ public class Server extends Thread {
                     response.put("player_id", this.playerId);
                     communicator.sendResponseKeSeberangSana(response);
 
-                    // TEMP: THE ROLE
-                    if (this.playerId == 2 || this.playerId == 3) {
-                        this.isWerewolf = true;
-                    }
-                    else {
-                        this.isWerewolf = false;
-                    }
-
                 }
                 // PROTOCOL NO. 2 (+ PROTOCOL NO. 12 INCLUSIVE (jangan): START GAME) TODO: Random Werewolf player and START GAME
                 else if (request.get("method").equals("ready")) {
@@ -114,29 +106,8 @@ public class Server extends Thread {
                     response.put("status", "ok");
                     response.put("description", "waiting for other player to start");
                     communicator.sendResponseKeSeberangSana(response);
-                    if (game.getPlayerReady().size() == game.getPlayerConnected().size() && game.getPlayerReady().size() >= 6) {
-                        game.startGame();
 
 
-//                    boolean werewolfRole;
-//                    int randomNum = (int) Math.random();
-//                    if (randomNum == 0) {
-//                        werewolfRole = false;
-//                    }
-//                    else {
-//                        werewolfRole = true;
-//                    }
-
-                        // Assign role to Game List
-                        for (Server server : serverList) {
-                            if (this.isWerewolf) {
-                                game.addWerewolf(new Player(this.udpIpAddress, this.udpPortNumber, this.playerId, this.username, this.aliveStatus));
-                            }
-                            else {
-                                game.addCitizen(new Player(this.udpIpAddress, this.udpPortNumber, this.playerId, this.username, this.aliveStatus));
-                            }
-                        }
-                    }
                 }
                 // PROTOCOL NO. 3
                 else if (request.get("method").equals("leave")) {
@@ -285,7 +256,6 @@ public class Server extends Thread {
             } catch (IOException e) {
                 e.printStackTrace();
             }
-
         } while (!leaveStatus);
     }
 
