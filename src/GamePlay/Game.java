@@ -377,7 +377,7 @@ public class Game extends Thread{
         if (getPlayerWerewolfActiveList().size()==0)
             request.put("winner","player");
         else
-            request.put("winner","winner");
+            request.put("winner","werewolf");
 
         for (Object playerObject : playerConnected){
             Player player = (Player) playerObject;
