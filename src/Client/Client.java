@@ -468,17 +468,54 @@ public class Client {
                     doPaxos();
                 }
            }else if (serverCommand.get("method").equals("vote_now")){
-               JSONObject response = new JSONObject();
-               response.put("status","ok");
-
-               System.out.println("VOTING NOT IMPLEMENTED");
-            //TODO run voting process
+               runVotingProcess(serverCommand);
            }else if (serverCommand.get("method").equals("game_over")){
                 gameOver(serverCommand);
            }
 
         }while (!gameOver);
 
+    }
+
+    private void runVotingProcess(JSONObject serverCommand) throws InterruptedException {
+        JSONObject response = new JSONObject();
+        response.put("status","ok");
+        try {
+            communicator.sendResponseKeSeberangSana(response);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        VoteListener voteListener = null;
+
+        if (isKPU){
+            try {
+                voteListener = new VoteListener(listPlayer, playerInfo.getPlayerId(), datagramSocket, isDay);
+                voteListener.run();
+            } catch (SocketException e) {
+                e.printStackTrace();
+            }
+        }
+
+        //TODO send votes
+
+        if (isKPU){
+            assert voteListener != null;
+            voteListener.join();
+            JSONObject serverNotif = voteListener.getVoteResult();
+            try {
+                JSONObject serverResponse = communicator.sendRequestAndGetResponse(serverNotif);
+                if (serverResponse.get("status").equals("fail")){
+                    ui.displayFailedResponse("KPU send result to server fail", (String) serverResponse.get("description"));
+                }else if (serverResponse.get("status").equals("error")){
+                    ui.displayFailedResponse("KPU send result to server error", (String) serverResponse.get("description"));
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     public int countActivePlayers() {
@@ -563,6 +600,35 @@ public class Client {
     }
     /* VOTING */
 
+    public boolean playerIDExists(int playerId){
+        for (ClientInfo clientInfo : listPlayer){
+            if (clientInfo.getPlayerId() == playerId){
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public void sendVote(){
+        if (isDay){
+            int votedID = ui.askPlayerKilled("day");
+            while (! playerIDExists(votedID)){
+                ui.displayFailedResponse("wrong number", "client ID " + votedID + "doesn't exist");
+            }
+
+            voteKillCivilian(votedID);
+
+        }else if (playerInfo.getRole().equals("werewolf")){
+            int votedID = ui.askPlayerKilled("night");
+            while (! playerIDExists(votedID)){
+                ui.displayFailedResponse("wrong number", "client ID " + votedID + "doesn't exist");
+            }
+
+            voteKillWerewolf(votedID);
+        }
+    }
+
     public void voteKillWerewolf(int playerId) {
         if(playerInfo.getRole().equals("werewolf") && !isDay){
             // Create JSON Object for killWerewolf request
@@ -575,7 +641,7 @@ public class Client {
     }
 
     public void voteKillCivilian(int playerId) {
-        if(playerInfo.getRole().equals("civilian") && isDay){
+        if(isDay){
 
             // Create JSON Object for killWerewolf request
             JSONObject killCivilianRequest = new JSONObject();

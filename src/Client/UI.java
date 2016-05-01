@@ -34,6 +34,8 @@ public interface UI {
      * */
     int askReadyOrLeave();
 
+    int askPlayerKilled(String phase);
+
     Boolean askLeaveWhileWaiting();
 }
 

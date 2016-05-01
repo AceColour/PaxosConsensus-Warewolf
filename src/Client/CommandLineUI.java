@@ -164,6 +164,14 @@ public class CommandLineUI implements UI{
         }
     }
 
+    @Override
+    public int askPlayerKilled(String phase) {
+        System.out.println("Vote kill: ");
+        Scanner sc = new Scanner(System.in);
+
+        return sc.nextInt();
+    }
+
     boolean waiting;
 
     @Override
