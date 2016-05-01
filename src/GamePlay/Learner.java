@@ -57,9 +57,10 @@ public class Learner {
             finalValue = acceptedValue;
             acceptcounts.clear();
             acceptors.clear();
-
-            quorumReached.set(true);
-            quorumReached.notify();
+            synchronized(quorumReached){
+                quorumReached.set(true);
+                quorumReached.notify();
+            }
         }
     }
 }

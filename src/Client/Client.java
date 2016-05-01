@@ -537,7 +537,7 @@ public class Client {
         }
 
         //run paxos if day and not gameover
-        paxosController = new PaxosController(listPlayer, playerInfo.getPlayerId(), datagramSocket);
+        paxosController = new PaxosController(listPlayer, playerInfo.getPlayerId(), datagramSocket,communicator);
         paxosController.start();
 
         //tunggu perintah vote dari server

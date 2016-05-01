@@ -55,16 +55,17 @@ public class Proposer {
             return;
         }
 
-        promisesReceived.add(_fromUid);
+        synchronized(promisesReceived){
 
-        if (lastAcceptedId == null || _prevAcceptedId.getId() > lastAcceptedId.getId()) {
-            lastAcceptedId = _prevAcceptedId;
+            promisesReceived.add(_fromUid);
 
-            proposedValue = _prevAcceptedValue;
-        }
+            if (lastAcceptedId == null || _prevAcceptedId.getId() > lastAcceptedId.getId()) {
+                lastAcceptedId = _prevAcceptedId;
 
-        if (promisesReceived.size() == quorumSize) {
-            if (proposedValue != 0) {
+                proposedValue = _prevAcceptedValue;
+            }
+
+            if (promisesReceived.size() == quorumSize) {
                 messenger.sendAccept(this.proposalId, this.proposedValue);
             }
         }

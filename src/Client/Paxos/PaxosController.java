@@ -27,8 +27,10 @@ public class PaxosController extends Thread{
     int idTerbesar = 0;
     int idKeduaTerbesar = 0;
 
+    int roundTimeout = 1000;
+
     DatagramSocket datagramSocket;
-    TCPRequestResponseChannel tcpRequestResponseChannel;
+    TCPRequestResponseChannel learnerChannel;
     /**
      *
      * @param clientList a clientlist received from the server
@@ -36,12 +38,13 @@ public class PaxosController extends Thread{
      * @param datagramSocket a bound datagramsocket for listening and sending messages
      * @throws SocketException
      */
-    public PaxosController(List<ClientInfo> clientList, int thisPlayerId, DatagramSocket datagramSocket) throws SocketException {
+    public PaxosController(List<ClientInfo> clientList, int thisPlayerId, DatagramSocket datagramSocket, TCPRequestResponseChannel learnerChannel) throws SocketException {
         super();
 
         this.datagramSocket = datagramSocket;
         this.clientList = clientList;
         this.thisPlayerId = thisPlayerId;
+        this.learnerChannel = learnerChannel;
 
         //hitung dua client id terbesar
         idTerbesar = 0;
@@ -56,7 +59,7 @@ public class PaxosController extends Thread{
                 idKeduaTerbesar = clientInfo.getPlayerId();
         }
 
-        messenger = new Messenger(clientList,idTerbesar,idKeduaTerbesar,datagramSocket, tcpRequestResponseChannel);
+        messenger = new Messenger(clientList,idTerbesar,idKeduaTerbesar,datagramSocket, this.learnerChannel);
         acceptor = new Acceptor();
         acceptor.messenger = messenger;
         proposer = new Proposer(this.thisPlayerId, messenger, (clientList.size()-2)/2+1);
@@ -81,13 +84,17 @@ public class PaxosController extends Thread{
             }
     }
 
+    boolean isProposer;
+
     public void runAsProposer() throws SocketException {
+        isProposer = true;
         proposer.setProposedValue(thisPlayerId);//ui.askKPUId());
         proposer.prepare();
         runSisanya();
     }
 
     public void runAsAcceptor() throws SocketException {
+        isProposer = false;
         runSisanya();
     }
 
@@ -101,7 +108,17 @@ public class PaxosController extends Thread{
         int originalTimeOut = datagramSocket.getSoTimeout();
         datagramSocket.setSoTimeout(10);
 
+        long roundTimeStart = System.currentTimeMillis();
+
         while (continueListening){
+            long roundTimeElapsed = System.currentTimeMillis() - roundTimeStart;
+            if (roundTimeElapsed > roundTimeout){
+                roundTimeStart = System.currentTimeMillis();
+                //start new round
+                if (isProposer){
+                    proposer.prepare();
+                }
+            }
             try {
                 datagramSocket.receive(message);
                 handleMessage(message);
@@ -159,7 +176,8 @@ public class PaxosController extends Thread{
             if (receivedMethod.equals("prepare_proposal")){
                 acceptor.receivePrepare(UID, new ProposalId((List<Long>) jsonObject.get("proposal_id")));
             } else if (receivedMethod.equals("accept_proposal")) {
-                acceptor.receiveAccept(UID, new ProposalId((List<Long>) jsonObject.get("proposal_id")), (Integer) jsonObject.get("kpu_id"));
+                acceptor.receiveAccept(UID, new ProposalId((List<Long>) jsonObject.get("proposal_id")),
+                        Integer.parseInt( jsonObject.get("kpu_id").toString()));
             } else if (receivedMethod.equals("promise")){
                 proposer.receivePromise(UID, null, //ProposalId gak kepake
                         new ProposalId(-1,-1) /*TODO apakah ganti yang bener atau gimana, soalnya di protokol yang dari spek ngga ada ini*/,

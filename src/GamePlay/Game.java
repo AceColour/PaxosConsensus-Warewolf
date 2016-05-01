@@ -112,8 +112,9 @@ public class Game extends Thread{
                 }
             }
         }
-
-        killPlayerRequestReceivedLock.notify();
+        synchronized(killPlayerRequestReceivedLock){
+            killPlayerRequestReceivedLock.notify();
+        }
     }
 
     public void waitkillRequestReceived(){

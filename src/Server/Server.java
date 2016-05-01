@@ -184,7 +184,7 @@ public class Server extends Thread {
                 }
                 // PROTOCOL NO. 9: INFO WEREWOLF KILLED (PROTOCOL NO. 13 INCLUSIVE: Change phase)
                 else if (request.get("method").equals("vote_result_werewolf")) {
-                    game.killPlayer((Integer) request.get("player_killed"));
+                    game.killPlayer(Integer.parseInt(request.get("player_killed").toString()));
                     JSONObject jsonObject = new JSONObject();
                     jsonObject.put("status", "ok");
                     jsonObject.put("description", "player killed");
@@ -198,7 +198,7 @@ public class Server extends Thread {
                 }
                 // PROTOCOL NO. 11: INFO CIVILIAN KILLED (PROTOCOL NO. 13 INCLUSIVE: Change phase)
                 else if (request.get("method").equals("vote_result_civilian")) {
-                    game.killPlayer((Integer) request.get("player_killed"));
+                    game.killPlayer(Integer.parseInt (request.get("player_killed").toString()));
                     JSONObject jsonObject = new JSONObject();
                     jsonObject.put("status", "ok");
                     jsonObject.put("description", "player killed");

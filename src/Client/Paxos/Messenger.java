@@ -77,7 +77,9 @@ public class Messenger {
         jsonObject.put("proposal_id", jsonArray);
         jsonObject.put("kpu_id", proposalValue);
         for (ClientInfo clientInfo : listClient){
-            if (clientInfo.getPlayerId() == proposalId.getPlayerId()){
+
+            if (clientInfo.getPlayerId() != clientIdKeduaTerbesar && clientInfo.getPlayerId() != clientIdTerbesar){
+
                 sendJSONString(jsonObject,clientInfo);
             }
         }
