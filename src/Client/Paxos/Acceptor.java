@@ -35,21 +35,12 @@ public class Acceptor {
 
     // Setter: N/A
 
-    // Methods: SEND(s)
-    public void sendPromise() {
-
-    }
-
-    public void sendAccepted() {
-
-    }
-
     // Methods: RECEIVE(s)
     public void receivePrepare(int fromUId, ProposalId proposalId) throws IOException {
         if (this.promisedId != null && proposalId.equals(promisedId)) { // duplicate message
             messenger.sendPromise(fromUId, prevAcceptedValue, acceptedValue);
         }
-        else if (this.promisedId == null || proposalId.getId() > promisedId.getId()) {
+        else if (this.promisedId == null || proposalId.compare(promisedId) == 1) {
             promisedId = proposalId;
             messenger.sendPromise(fromUId, prevAcceptedValue, acceptedValue);
         }

@@ -18,10 +18,10 @@ public class Proposer {
     protected HashSet<Integer> promisesReceived = new HashSet<Integer>();
 
     // Constructor
-    public Proposer(Messenger _messenger, int _quorumSize) {
+    public Proposer(int playerId, Messenger _messenger, int _quorumSize) {
         this.messenger = _messenger;
         this.quorumSize = _quorumSize;
-        this.proposalId = new ProposalId(0, 0);
+        this.proposalId = new ProposalId(0, playerId);
     }
 
     // Getter
@@ -80,8 +80,12 @@ public class Proposer {
         proposalId.incrementId();
         try {
             messenger.sendPrepare(proposalId);
+
+            // Increment the proposal id
+            proposalId.setId(proposalId.getId() + 1);
         } catch (IOException e) {
             e.printStackTrace();
         }
+
     }
 }

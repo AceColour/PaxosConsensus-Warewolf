@@ -15,6 +15,8 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
+import static java.net.InetAddress.*;
+
 /**
  * Created by nim_13512501 on 4/23/16.
  */
@@ -119,6 +121,7 @@ public class Client {
             playerInfo.setRole(recv.get("role").toString());
             if(playerInfo.getRole().equals("werewolf")){
                 friends = (ArrayList)recv.get("friends");
+                //TODO debug this
             }
 
             // Send back response to server
@@ -132,33 +135,44 @@ public class Client {
 
         }
         daysCount++;
-        isDay = true;
     }
 
-    public void run() throws IOException {
+    public void run() throws IOException, InterruptedException {
         // Get UDP Port
+        int port =  ui.askPortUDP();
         try {
             UDPAddress = new InetSocketAddress(
-                    InetAddress.getLocalHost().getHostAddress(),
-                    ui.askPortUDP()
+                    getLocalHost().getHostAddress(),
+                   port
             );
         } catch (UnknownHostException e) {
             e.printStackTrace();
         }
 
+        // Debug
+        System.out.println(getLocalHost().getHostAddress() + ":" + port) ;
+
+        // Get Server address
+        serverAddress = ui.askServerAddress();
+
         // Initializing TCP Channel for request and response
         try {
             communicator = new TCPRequestResponseChannel(
-                    ui.askServerAddress().getAddress(),
-                    ui.askServerAddress().getPort()
+                    serverAddress.getAddress(),
+                    serverAddress.getPort()
             );
         } catch (IOException e) {
             e.printStackTrace();
         }
 
+        // Join to server
         join();
+
+        // Send ready up request
+        readyUp();
+
         if(isReady && isStart) {
-            paxosController.run();
+            play();
         }
     }
 
@@ -246,6 +260,32 @@ public class Client {
         }while (retryRequest); // while there is error or failed response, try send request again
     }
 
+    public void changePhase() {
+        // listening to the port
+        JSONObject recv = null;
+        try {
+            recv = communicator.getLastRequestDariSeberangSana();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        if(recv.get("method").equals("change_phase")) {
+            isDay = recv.get("time").equals("day");
+            daysCount = Integer.parseInt(recv.get("days").toString());
+
+            // Send back response to server
+            JSONObject response = new JSONObject();
+            response.put("status", "ok");
+            try {
+                communicator.sendResponseKeSeberangSana(response);
+
+                // Retrieve the latest client list
+                retrieveListClient();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
     public void retrieveListClient() throws UnknownHostException {
 
         // Variable to determine request whether ok or not
@@ -253,7 +293,7 @@ public class Client {
 
         // Create JSON Object for listClient request
         JSONObject listClientRequest = new JSONObject();
-        listClientRequest.put("method", "ready");
+        listClientRequest.put("method", "client_address");
 
         do {
             // Get JSON Object as join response from server
@@ -283,6 +323,7 @@ public class Client {
                 JSONArray slideContent = (JSONArray) listClientResponse.get("clients");
                 Iterator i = slideContent.iterator();
 
+                //TODO debug this
                 while (i.hasNext()) {
                     JSONObject clientJSON = (JSONObject) i.next();
 
@@ -290,7 +331,7 @@ public class Client {
                     listPlayer.add(new ClientInfo(
                             (Integer) clientJSON.get("player_id"),
                             (Integer) clientJSON.get("is_alive"),
-                            InetAddress.getByName((String)clientJSON.get("address")),
+                            getByName((String)clientJSON.get("address")),
                             (Integer) clientJSON.get("port"),
                             (String)clientJSON.get("username")
                     ));
@@ -318,27 +359,7 @@ public class Client {
 
         do{
             //change phase
-            boolean gotChangePhase = false;
-            do {
-                JSONObject message = communicator.getLastRequestDariSeberangSana();
-                if (isMethodGameOver(message)){
-                    gameOver = true;
-                    JSONObject response = new JSONObject();
-                    response.put("status", "ok");
-                    communicator.sendResponseKeSeberangSana(response);
-                }else if (message.get("method").equals("change_phase")){
-                    isDay=message.get("phase").equals("day");
-                    daysCount= Integer.parseInt(message.get("days").toString());
-                    JSONObject response = new JSONObject();
-                    response.put("status", "ok");
-                    communicator.sendResponseKeSeberangSana(response);
-                }else{
-                    JSONObject response = new JSONObject();
-                    response.put("status", "fail");
-                    response.put("description", "client cannot conform");
-                    communicator.sendResponseKeSeberangSana(response);
-                }
-            }while (!gotChangePhase);
+           changePhase();
 
             if (isDay) {
                 //TODO show civilian killed if day and not gameover
@@ -359,6 +380,7 @@ public class Client {
                         response.put("status", "ok");
                         communicator.sendResponseKeSeberangSana(response);
                     } else if (message.get("method").equals("vote_now")) {
+
                         isDay = message.get("phase").equals("day");
                         JSONObject response = new JSONObject();
                         response.put("status", "ok");
@@ -372,37 +394,6 @@ public class Client {
                 } while (!gotVoteCommand);
 
                 paxosController.stopPaxos();
-
-
-                if (isDay) {
-                    //TODO show civilian killed if day and not gameover
-                    //TODO show werewolf/civilian killed if night and not gameover
-
-                    //run paxos if day and not gameover
-                    paxosController = new PaxosController(listPlayer, playerInfo.getPlayerId(), datagramSocket);
-                    paxosController.start();
-
-                    //tunggu perintah vote dari server
-                    //periksa lagi apakah perintah vote itu sebelum atau sesudah paxos
-                    gotVoteCommand = false;
-                    do {
-                        JSONObject message = communicator.getLastRequestDariSeberangSana();
-                        JSONObject response = new JSONObject();
-                        if (isMethodGameOver(message)) {
-                            gameOver = true;
-                            response.put("status", "ok");
-                            communicator.sendResponseKeSeberangSana(response);
-                        } else if (message.get("method").equals("kpu_selected")) {
-                            kpu_id = Integer.parseInt(message.get("kpu_id").toString());
-                            response.put("status", "ok");
-                            communicator.sendResponseKeSeberangSana(response);
-                        } else {
-                            response.put("status", "fail");
-                            response.put("description", "client cannot conform");
-                            communicator.sendResponseKeSeberangSana(response);
-                        }
-                    } while (!gotVoteCommand);
-                }
             }
             //TODO run voting process
             if (!isDay && playerInfo.getRole().equals("werewolf")){
@@ -418,7 +409,21 @@ public class Client {
         return message.get("method").equals("game_over");
     }
 
-    public static void main(String [] args) throws IOException {
+    public int countActivePlayers() {
+        // Return the number of active players
+        int count = 0;
+        for (int i=0; i<listPlayer.size(); i++)
+            if (listPlayer.get(i).getIsAlive() == 1)
+                count++;
+        return count;
+    }
+
+    /* DOING PAXOS */
+    public void doPaxos(){
+
+    }
+
+    public static void main(String [] args) throws IOException, InterruptedException {
         Client client = new Client();
 
         try {

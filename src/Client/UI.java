@@ -9,6 +9,7 @@ public interface UI {
     InetSocketAddress askServerAddress();
     String askUsername();
     int askPortUDP();
+    int askKPUId();
 
     void displaySuccessfulResponse(String header);
     void displayFailedResponse(String header, String cause);
