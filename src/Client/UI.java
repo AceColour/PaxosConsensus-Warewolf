@@ -1,5 +1,7 @@
 package Client;
 
+import Client.Misc.ClientInfo;
+
 import java.net.InetSocketAddress;
 import java.util.List;
 
@@ -20,8 +22,12 @@ public interface UI {
 
     void displayGameOver(String winner);
 
+    void displayListClient(List<ClientInfo> clientInfoList);
+
     void displayErrorConnecting(InetSocketAddress inetSocketAddress);
     void displayGameStart(Object time, Object role, Object friend);
+
+    void displayPlayerKilled(ClientInfo clientInfo);
 
     /**
      * mengembalikan 0 bila leave, 1 bila ready

@@ -1,6 +1,9 @@
 package Client;
 
+import Client.Misc.ClientInfo;
+
 import java.net.InetSocketAddress;
+import java.util.List;
 import java.util.Scanner;
 
 /**
@@ -105,6 +108,20 @@ public class CommandLineUI implements UI{
     }
 
     @Override
+    public void displayListClient(List<ClientInfo> clientInfoList) {
+        System.out.println("==============================");
+        System.out.println("---------- Players -----------");
+        System.out.println("id\talive\tname");
+        for (ClientInfo clientInfo : clientInfoList){
+            System.out.print(""+clientInfo.getPlayerId() + "\t" + clientInfo.getIsAlive() + "\t" + clientInfo.getUsername());
+            if (clientInfo.getRole()!=null)
+                System.out.println("\t" + clientInfo.getRole() );
+            else
+                System.out.println("");
+        }
+    }
+
+    @Override
     public void displayErrorConnecting(InetSocketAddress inetSocketAddress) {
         System.out.println("Error connecting to " + inetSocketAddress);
     }
@@ -119,6 +136,14 @@ public class CommandLineUI implements UI{
             System.out.println("role: " + role);
         if (friend != null)
             System.out.println("Friends: " + friend);
+    }
+
+    @Override
+    public void displayPlayerKilled(ClientInfo clientInfo) {
+        System.out.println("");
+        System.out.println("Player Killed: " +clientInfo.getPlayerId() + "\t" + clientInfo.getUsername());
+        if (clientInfo.getRole()!=null)
+            System.out.println("\t" + clientInfo.getRole() );
     }
 
     @Override
@@ -139,11 +164,26 @@ public class CommandLineUI implements UI{
         }
     }
 
+    boolean waiting;
+
     @Override
     public Boolean askLeaveWhileWaiting() {
         System.out.println("waiting... type LEAVE followed by enter newline to leave the game");
-        Scanner scanIn = new Scanner(System.in);
-        String result = scanIn.nextLine();
+        waiting = true;
+        String result = "";
+        while (waiting){
+            Scanner scanIn = new Scanner(System.in);
+            if (scanIn.hasNext()){
+                result = scanIn.nextLine();
+                if (result.toLowerCase().equals("leave"))
+                    waiting = false;
+            }else
+                try {
+                    Thread.sleep(1);
+                } catch (InterruptedException e) {
+                    waiting = false;
+                }
+        }
         return result.equals("leave");
     }
 }

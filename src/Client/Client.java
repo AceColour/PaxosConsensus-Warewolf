@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.net.*;
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 
 import static java.net.InetAddress.*;
@@ -198,8 +199,16 @@ public class Client {
     }
 
     public void waitForStart() {
-        Boolean isLeave;
-        isLeave = ui.askLeaveWhileWaiting();
+
+        Thread leaveThread = new Thread(){
+            @Override
+            public void run(){
+
+                if (ui.askLeaveWhileWaiting())
+                    leave();
+            }
+        };
+        leaveThread.start();
 
         isStart = false;
         do{
@@ -239,6 +248,8 @@ public class Client {
                 e.printStackTrace();
             }
         }while (!isStart);
+
+        leaveThread.interrupt();
     }
 
     public void leave() {
@@ -377,8 +388,8 @@ public class Client {
             } else if(status.equals("ok")){
                 ui.displaySuccessfulResponse("Retrieve List Client");
 
-                // Clear list player
-                listPlayer.clear();
+                //create new listPlayer
+                List<ClientInfo> listPlayer2 = new LinkedList<ClientInfo>();
 
                 // Iterating client's array
                 JSONArray slideContent = (JSONArray) listClientResponse.get("clients");
@@ -389,14 +400,36 @@ public class Client {
                     JSONObject clientJSON = (JSONObject) i.next();
 
                     // Add client to list Player
-                    listPlayer.add(new ClientInfo(
-                            (Integer) clientJSON.get("player_id"),
-                            (Integer) clientJSON.get("is_alive"),
+                    listPlayer2.add(new ClientInfo(
+                            Integer.parseInt (clientJSON.get("player_id").toString()),
+                            Integer.parseInt (clientJSON.get("is_alive").toString()),
                             getByName((String)clientJSON.get("address")),
-                            (Integer) clientJSON.get("port"),
+                            Integer.parseInt (clientJSON.get("port").toString()),
                             (String)clientJSON.get("username")
                     ));
                 }
+
+                // Cari apakah ada player terbunuh
+                for (ClientInfo newClientInfo : listPlayer2){
+                    for (ClientInfo oldClientInfo : listPlayer){
+                        if (newClientInfo.getPlayerId() == oldClientInfo.getPlayerId()){
+                            ui.displayPlayerKilled(newClientInfo);
+                            if (newClientInfo.getPlayerId() == playerInfo.getPlayerId()){
+                                playerInfo.setIsAlive(0);
+                            }
+                        }
+                    }
+                }
+
+                // Clear list player
+                listPlayer.clear();
+                //copy listPlayer
+                for (ClientInfo newClientInfo: listPlayer2){
+                    listPlayer.add(newClientInfo);
+                }
+                listPlayer2.clear();
+
+                ui.displayListClient(listPlayer);
 
             } else if(status.equals("fail")) {
                 ui.displayFailedResponse("Retrieve List Client", "connection failure: error response from server");
@@ -479,7 +512,10 @@ public class Client {
                     JSONObject response = new JSONObject();
                     if (message.containsKey("kpu_id")){
                         response.put("status", "ok");
-                        kpu_id = (Integer) message.get("kpu_id");
+                        kpu_id = Integer.parseInt(message.get("kpu_id").toString());
+                        if (kpu_id == playerInfo.getPlayerId())
+                            isKPU = true;
+                        KPUSelected = true;
                     }else{
                         response.put("status", "error");
                         response.put("description", "value not found");
