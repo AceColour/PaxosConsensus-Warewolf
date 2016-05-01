@@ -1,6 +1,5 @@
 package GamePlay;
 
-import Server.Server;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
@@ -65,6 +64,9 @@ public class Game extends Thread{
         this.playerWerewolfActiveList.add(_player);
     }
 
+    private Object killPlayerRequestReceivedLock = new Object();
+    private boolean adaPlayerDibunuh;
+
     public void killPlayer(int _playerId) {
         boolean found = false;
         Iterator<Player> iterator = playerCitizenActiveList.iterator();
@@ -84,6 +86,7 @@ public class Game extends Thread{
                     currentPlayerConnectedIterator = iteratorPlayerConnected.next();
                     if (currentPlayerConnectedIterator.getPlayerId() == _playerId) {
                         currentPlayerConnectedIterator.setAliveStatus(false);
+                        adaPlayerDibunuh = true;
                     }
                 }
             }
@@ -105,15 +108,31 @@ public class Game extends Thread{
                     currentPlayerConnectedIterator = iteratorPlayerConnected.next();
                     if (currentPlayerConnectedIterator.getPlayerId() == _playerId) {
                         currentPlayerConnectedIterator.setAliveStatus(false);
+                        adaPlayerDibunuh = true;
                     }
                 }
             }
         }
+
+        killPlayerRequestReceivedLock.notify();
+    }
+
+    public void waitkillPlayerRequestReceived(){
+        try {
+            killPlayerRequestReceivedLock.wait();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public int quorumSize(){
+        return (playerConnected.size()-2)/2+1;
     }
 
     public void startGame() {
         this.startedStatus = true;
         assignRoles();
+        learner = new Learner(quorumSize());
         sendStartGameBroadcast();
     }
 
@@ -267,6 +286,41 @@ public class Game extends Thread{
         }
     }
 
+    public void accepted(int fromUid, int acceptedValue){
+        learner.receiveAccepted(fromUid, acceptedValue);
+    }
+
+    Learner learner;
+
+    public void waitKPUId(){
+        try {
+            int kpu_id = learner.waitFinalValue();
+            sendKPUIdBroadcast(kpu_id);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void sendKPUIdBroadcast(int kpu_id){
+        JSONObject request = new JSONObject();
+        request.put("method","kpu_selected");
+        request.put("kpu_id",kpu_id);
+
+        for (Object playerObject : playerConnected){
+            Player player = (Player) playerObject;
+
+            try {
+                JSONObject response = player.getCommunicator().sendRequestAndGetResponse(request);
+                System.out.println("send kpu_id " + kpu_id + " to player " + player.getPlayerId() + " . response: ");
+                System.out.println(response);
+            } catch (IOException e) {
+                e.printStackTrace();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
     private void waitNumPlayersReady(){
 
         System.out.println("waiting players");
@@ -284,5 +338,33 @@ public class Game extends Thread{
     public void run(){
         waitNumPlayersReady();
         startGame();
+        waitKPUId();
+        voteNow();
+        waitkillPlayerRequestReceived();
+        if (!adaPlayerDibunuh){
+            voteNow();
+            waitkillPlayerRequestReceived();
+        }
+
+    }
+
+    private void voteNow() {
+        JSONObject request = new JSONObject();
+        request.put("method","vote_now");
+        request.put("phase",dayStatus?"day":"night");
+
+        for (Object playerObject : playerConnected){
+            Player player = (Player) playerObject;
+
+            try {
+                JSONObject response = player.getCommunicator().sendRequestAndGetResponse(request);
+                System.out.println("send vote_now to player " + player.getPlayerId() + " . response: ");
+                System.out.println(response);
+            } catch (IOException e) {
+                e.printStackTrace();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
     }
 }

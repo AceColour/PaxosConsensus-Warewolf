@@ -1,6 +1,7 @@
 package Server;
 
 import Client.Communications.TCPRequestResponseChannel;
+import Client.Paxos.ProposalId;
 import GamePlay.*;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
@@ -24,7 +25,6 @@ public class Server extends Thread {
     private String udpIpAddress;
     private int udpPortNumber;
     private int playerId;
-    private static JSONArray kpuProposalJSON = null;
     private static int voteDayNotDecidedCount = 0;
     public String username;
     private boolean aliveStatus = true;
@@ -165,51 +165,21 @@ public class Server extends Thread {
                     System.out.println(response.toString());
                     communicator.sendResponseKeSeberangSana(response);
                 }
-                // [OK] PROTOCOL NO. 7: CLIENT ACCEPTED PROPOSAL (FOR KPU_ID) (+PROTOCOL NO. 12: KPU SELECTED)
+                // [OK] PROTOCOL NO. 7: CLIENT ACCEPTED PROPOSAL (FOR KPU_ID)
                 else if (request.get("method").equals("accepted_proposal")) {
-                    if (kpuProposalJSON == null) {
-                        JSONObject jsonObject = new JSONObject();
-                        jsonObject.put("kpu_id", request.get("kpu_id"));
-                        jsonObject.put("count", 1);
-                        kpuProposalJSON.add(jsonObject);
-                    }
-                    else {
-                        // Iterate through JSON Array
-                        Iterator iterator = kpuProposalJSON.iterator();
-                        boolean found = false;
-                        while (!found && iterator.hasNext()) {
-                            JSONObject jsonObjectIterate = (JSONObject) iterator.next();
-                            if (jsonObjectIterate.get(request.get("kpu_id")) != null) {
-                                jsonObjectIterate.put("count", (Integer) jsonObjectIterate.get("count") + 1);
-                                found = true;
-                            }
-                        }
+                    JSONObject response = new JSONObject();
 
-                        // KPU ID not found
-                        if (!found) {
-                            JSONObject jsonObjectIterate = new JSONObject();
-                            jsonObjectIterate.put("kpu_id", request.get("kpu_id"));
-                            jsonObjectIterate.put("count", 1);
-                            kpuProposalJSON.add(jsonObjectIterate);
-                        }
+                    if (request.containsKey("kpu_id")){
+                        int from_UID = this.playerId;
+                        int acceptedValue = Integer.parseInt(request.get("kpu_id").toString());
+                        game.accepted(from_UID,acceptedValue);
+                        response.put("status","ok");
+                    }else{
+                        response.put("status","fail");
+                        response.put("description","required parameter kpu_id not found");
                     }
 
-                    // Iterate through kpuProposal JSON and Check condition if the KPU ID has reached quorum majority
-                    Iterator iterator = kpuProposalJSON.iterator();
-                    boolean found = false;
-                    while (!found && iterator.hasNext()) {
-                        JSONObject jsonObjectIterate = (JSONObject) iterator.next();
-                        if ((Integer) jsonObjectIterate.get("count") > (Integer) (game.getPlayerConnected().size() / 2) + 1) {
-                            // Quorum reached, send KPU SELECTED
-                            JSONObject jsonObjectSend = new JSONObject();
-                            jsonObjectSend.put("method", "kpu_selected");
-                            jsonObjectSend.put("kpu_id", jsonObjectIterate.get("kpu_id"));
-                            //sendBroadcast(jsonObjectSend.toString());
-                            found = true;
-                        }
-                    }
-
-
+                    communicator.sendResponseKeSeberangSana(response);
                 }
                 // PROTOCOL NO. 9: INFO WEREWOLF KILLED (PROTOCOL NO. 13 INCLUSIVE: Change phase)
                 else if (request.get("method").equals("vote_result_werewolf")) {
