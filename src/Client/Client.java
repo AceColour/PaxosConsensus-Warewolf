@@ -399,10 +399,10 @@ public class Client {
 
                     // Add client to list Player
                     listPlayer.add(new ClientInfo(
-                            (Integer) clientJSON.get("player_id"),
-                            (Integer) clientJSON.get("is_alive"),
+                            Integer.parseInt (clientJSON.get("player_id").toString()),
+                            Integer.parseInt (clientJSON.get("is_alive").toString()),
                             getByName((String)clientJSON.get("address")),
-                            (Integer) clientJSON.get("port"),
+                            Integer.parseInt (clientJSON.get("port").toString()),
                             (String)clientJSON.get("username")
                     ));
                 }
