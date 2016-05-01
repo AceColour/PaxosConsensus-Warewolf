@@ -11,10 +11,7 @@ import java.io.*;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
 /**
  * Created by erickchandra on 4/25/16.
@@ -29,6 +26,9 @@ public class Server extends Thread {
     private int playerId;
     private static JSONArray kpuProposalJSON = null;
     private static int voteDayNotDecidedCount;
+    private boolean isWerewolf = false;
+    private String username;
+    private boolean aliveStatus = true;
 
     private static List<Server> serverList;
 
@@ -82,13 +82,24 @@ public class Server extends Thread {
             if (jsonObjectReceived.get("method").equals("join")) {
                 this.udpIpAddress = jsonObjectReceived.get("udp_address").toString();
                 this.udpPortNumber = Integer.parseInt(jsonObjectReceived.get("udp_port").toString());
+                this.username = jsonObjectReceived.get("username").toString();
+                this.aliveStatus = true;
                 this.playerId = this.receiveJoin(jsonObjectReceived.get("udp_address").toString(), Integer.parseInt(jsonObjectReceived.get("udp_port").toString()), jsonObjectReceived.get("username").toString());
                 JSONObject jsonObjectSend = new JSONObject();
                 jsonObjectSend.put("status", "ok");
                 jsonObjectSend.put("player_id", this.playerId);
                 send(clientSocket, jsonObjectSend.toString());
+
+                // TEMP: THE ROLE
+                if (this.playerId == 2 || this.playerId == 3) {
+                    this.isWerewolf = true;
+                }
+                else {
+                    this.isWerewolf = false;
+                }
+
             }
-            // PROTOCOL NO. 2 (+ PROTOCOL NO. 12 INCLUSIVE: START GAME) TODO: START GAME
+            // PROTOCOL NO. 2 (+ PROTOCOL NO. 12 INCLUSIVE: START GAME) TODO: Random Werewolf player and START GAME
             else if (jsonObjectReceived.get("method").equals("ready")) {
                 receiveReady(this.udpIpAddress, this.udpPortNumber);
                 JSONObject jsonObject = new JSONObject();
@@ -97,6 +108,28 @@ public class Server extends Thread {
                 send(clientSocket, jsonObject.toString());
                 if (game.getPlayerReady().size() == game.getPlayerConnected().size() && game.getPlayerReady().size() >= 6) {
                     game.startGame();
+
+                    // Random player role
+
+//                    boolean werewolfRole;
+//                    int randomNum = (int) Math.random();
+//                    if (randomNum == 0) {
+//                        werewolfRole = false;
+//                    }
+//                    else {
+//                        werewolfRole = true;
+//                    }
+
+                    // Assign role to Game List
+                    for (Server server : serverList) {
+                        if (this.isWerewolf) {
+                            game.addWerewolf(new Player(this.udpIpAddress, this.udpPortNumber, this.playerId, this.username, this.aliveStatus));
+                        }
+                        else {
+                            game.addCitizen(new Player(this.udpIpAddress, this.udpPortNumber, this.playerId, this.username, this.aliveStatus));
+                        }
+                    }
+
                     jsonObject = new JSONObject();
                     jsonObject.put("status", "ok");
                     jsonObject.put("description", "waiting for other player to start");
@@ -186,7 +219,7 @@ public class Server extends Thread {
                     }
                 }
 
-                
+
             }
             // PROTOCOL NO. 9: INFO WEREWOLF KILLED (PROTOCOL NO. 13 INCLUSIVE: Change phase)
             else if (jsonObjectReceived.get("method").equals("vote_result_werewolf")) {
@@ -221,7 +254,8 @@ public class Server extends Thread {
                     JSONObject jsonObject = new JSONObject();
                     jsonObject.put("method", "vote_now");
                     jsonObject.put("phase", "night");
-                    sendBroadcast()
+//                    sendBroadcast()
+
                 }
                 else { // In the day time, civilian is only restricted to vote only max 2 times. Otherwise, change day
 
