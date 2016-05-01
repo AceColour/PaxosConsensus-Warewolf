@@ -2,7 +2,11 @@ package Client;
 
 import Client.Misc.ClientInfo;
 
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.NetworkInterface;
+import java.net.SocketException;
+import java.util.Enumeration;
 import java.util.List;
 
 /**
@@ -12,6 +16,7 @@ public interface UI {
     InetSocketAddress askServerAddress();
     String askUsername();
     int askPortUDP();
+    InetAddress askAddressUDP(Enumeration<NetworkInterface> choices) throws SocketException;
     int askKPUId();
     int killWerewolfId();
     int killCivilianId();

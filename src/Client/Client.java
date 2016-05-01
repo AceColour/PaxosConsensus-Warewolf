@@ -1,6 +1,7 @@
 package Client;
 
 
+import Client.Communications.ListNets;
 import Client.Communications.TCPRequestResponseChannel;
 import Client.Misc.ClientInfo;
 import Client.Paxos.Messenger;
@@ -10,10 +11,7 @@ import org.json.simple.JSONObject;
 
 import java.io.IOException;
 import java.net.*;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 
 import static java.net.InetAddress.*;
 
@@ -143,15 +141,15 @@ public class Client {
     public void run() throws IOException, InterruptedException {
         // Get UDP Port
         int port =  ui.askPortUDP();
+        Enumeration<NetworkInterface> nets = NetworkInterface.getNetworkInterfaces();
+        InetAddress UDPChosenAddress = ui.askAddressUDP(nets);
 
-        try {
-            UDPAddress = new InetSocketAddress(
-                    getLocalHost().getHostAddress(),
-                   port
-            );
-        } catch (UnknownHostException e) {
-            e.printStackTrace();
-        }
+
+
+        UDPAddress = new InetSocketAddress(
+                UDPChosenAddress,
+               port
+        );
 
         // Initialization socket value
         datagramSocket = new DatagramSocket(UDPAddress.getPort(),UDPAddress.getAddress());
@@ -410,9 +408,11 @@ public class Client {
                 for (ClientInfo newClientInfo : listPlayer2){
                     for (ClientInfo oldClientInfo : listPlayer){
                         if (newClientInfo.getPlayerId() == oldClientInfo.getPlayerId()){
-                            ui.displayPlayerKilled(newClientInfo);
-                            if (newClientInfo.getPlayerId() == playerInfo.getPlayerId()){
-                                playerInfo.setIsAlive(0);
+                            if (oldClientInfo.getIsAlive()==1 && newClientInfo.getIsAlive()==0){
+                                ui.displayPlayerKilled(newClientInfo);
+                                if (newClientInfo.getPlayerId() == playerInfo.getPlayerId()){
+                                    playerInfo.setIsAlive(0);
+                                }
                             }
                         }
                     }
@@ -457,6 +457,8 @@ public class Client {
         do{
 
            JSONObject serverCommand = communicator.getLastRequestDariSeberangSana();
+
+            retrieveListClient();
             //change phase
            if (serverCommand.get("method").equals("change_phase")){
                changePhase(serverCommand);
@@ -614,11 +616,20 @@ public class Client {
         return false;
     }
 
+    public boolean playerAlive(int id){
+        for (ClientInfo c : listPlayer){
+            if (c.getPlayerId() == id){
+                return c.getIsAlive()==1;
+            }
+        }
+        return false;
+    }
+
     public void sendVote(){
         if (isDay){
             int votedID = ui.killCivilianId();
-            while (! playerIDExists(votedID)){
-                ui.displayFailedResponse("wrong number", "client ID " + votedID + "doesn't exist");
+            while (! playerIDExists(votedID) || ! playerAlive(votedID)){
+                ui.displayFailedResponse("wrong number", "client ID " + votedID + " doesn't exist or isn't alive");
                 votedID = ui.askPlayerKilled("day");
             }
 
@@ -626,9 +637,9 @@ public class Client {
 
         }else if (playerInfo.getRole().equals("werewolf")){
             int votedID = ui.killWerewolfId();
-            while (! playerIDExists(votedID)){
-                ui.displayFailedResponse("wrong number", "client ID " + votedID + "doesn't exist");
-                votedID = ui.askPlayerKilled("night");
+            while (! playerIDExists(votedID) || ! playerAlive(votedID)){
+                ui.displayFailedResponse("wrong number", "client ID " + votedID + " doesn't exist or isn't alive");
+                votedID = ui.askPlayerKilled("day");
             }
 
             voteKillWerewolf(votedID);

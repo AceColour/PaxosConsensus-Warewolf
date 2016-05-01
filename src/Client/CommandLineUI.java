@@ -1,14 +1,18 @@
 package Client;
 
+import Client.Communications.ListNets;
 import Client.Misc.ClientInfo;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.util.List;
-import java.util.Scanner;
+import java.net.NetworkInterface;
+import java.net.SocketException;
+import java.text.ParseException;
+import java.util.*;
 
 /**
  * Created by nim_13512501 on 4/23/16.
@@ -52,6 +56,38 @@ public class CommandLineUI implements UI{
 
         Scanner scanIn = new Scanner(System.in);
         return scanIn.nextInt();
+    }
+
+    @Override
+    public InetAddress askAddressUDP(Enumeration<NetworkInterface> networkInterfaceEnumeration) throws SocketException {
+        Map<Integer, InetAddress> choices = new HashMap<Integer, InetAddress>();
+        int choicesindex = 1;
+        System.out.println("=====Choose UDP Address=====");
+        for (NetworkInterface networkInterface : Collections.list(networkInterfaceEnumeration)){
+            List<InetAddress> inetAddresses = ListNets.getInetAddresses(networkInterface);
+            for (InetAddress inetAddress : inetAddresses){
+                choices.put(choicesindex,inetAddress);
+                System.out.println("" + choicesindex + ". " + inetAddress.getHostAddress() + "\t" +networkInterface.getDisplayName());
+                choicesindex++;
+            }
+        }
+
+        Scanner sc = new Scanner(System.in);
+
+        while(true){
+
+            System.out.print("pilihan (angka di depannya):");
+
+            String s = sc.nextLine();
+
+            try{
+                int choice = Integer.parseInt(s);
+                if (choices.containsKey(choice))
+                    return choices.get(choice);
+            }catch(NumberFormatException e){
+            }
+        }
+
     }
 
     @Override
