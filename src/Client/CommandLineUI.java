@@ -48,6 +48,15 @@ public class CommandLineUI implements UI{
     }
 
     @Override
+    public int askKPUId() {
+        System.out.println("=====Insert Proposed KPU Id====");
+        System.out.print("KPU Id=: ");
+
+        Scanner scanIn = new Scanner(System.in);
+        return scanIn.nextInt();
+    }
+
+    @Override
     public void displaySuccessfulResponse(String header){
         System.out.println("=====" + header + " Result=====");
         System.out.println("status: ok");

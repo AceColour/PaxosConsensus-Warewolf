@@ -1,5 +1,6 @@
 package Client.Paxos;
 
+import Client.CommandLineUI;
 import Client.Communications.TCPRequestResponseChannel;
 import Client.Misc.ClientInfo;
 import org.json.simple.JSONObject;
@@ -20,6 +21,7 @@ public class PaxosController extends Thread{
     Acceptor acceptor;
     Proposer proposer;
     Messenger messenger;
+    CommandLineUI ui;
     int thisPlayerId;
 
     int idTerbesar = 0;
@@ -47,18 +49,21 @@ public class PaxosController extends Thread{
                 idKeduaTerbesar = clientInfo.getPlayerId();
         }
 
+        this.thisPlayerId = thisPlayerId;
         messenger = new Messenger(clientList,idTerbesar,idKeduaTerbesar,datagramSocket, tcpRequestResponseChannel);
         acceptor = new Acceptor();
         acceptor.messenger = messenger;
-        proposer = new Proposer(messenger, (clientList.size()-2)/2+1);
-        this.thisPlayerId = thisPlayerId;
+        proposer = new Proposer(this.thisPlayerId, messenger, (clientList.size()-2)/2+1);
+
     }
 
     @Override
     public void run(){
         if (thisPlayerId == idTerbesar || thisPlayerId == idKeduaTerbesar)
             try {
+                System.out.println("\nYou can propose");
                 runAsProposer();
+
             } catch (SocketException e) {
                 e.printStackTrace();
             }
@@ -71,7 +76,7 @@ public class PaxosController extends Thread{
     }
 
     public void runAsProposer() throws SocketException {
-        proposer.setProposedValue(thisPlayerId); // cobain pake ini
+        proposer.setProposedValue(ui.askKPUId());
         proposer.prepare();
         runSisanya();
     }
@@ -100,7 +105,6 @@ public class PaxosController extends Thread{
                 e.printStackTrace();
             }
         }
-
         datagramSocket.setSoTimeout(originalTimeOut);
     }
 
@@ -131,13 +135,15 @@ public class PaxosController extends Thread{
             if (jsonObject.containsKey("method")){
                 receivedMethod = (String) jsonObject.get("method");
             }else if (jsonObject.containsKey("status") && jsonObject.containsKey("description")){
-                if (jsonObject.get("status").equals("ok") && jsonObject.get("description").equals("accepted"))
-                    if(jsonObject.containsKey("previous_accepted")){
+                if (jsonObject.get("status").equals("ok") && jsonObject.get("description").equals("accepted")) {
+                    if (jsonObject.containsKey("previous_accepted")) {
                         receivedMethod = "promise";
-                    }else{
+                    } else {
                         receivedMethod = "acceptAccepted";
                     }
-
+                } else if(jsonObject.get("status").equals("fail") && jsonObject.get("description").equals("rejected")){
+                    receivedMethod = "rejected";
+                }
             }else {
                 messenger.sendError(UID, "unknown method");
             }
@@ -150,12 +156,15 @@ public class PaxosController extends Thread{
                 acceptor.receiveAccept(UID, new ProposalId((List<Integer>) jsonObject.get("proposal_id")), (Integer) jsonObject.get("kpu_id"));
             } else if (receivedMethod.equals("promise")){
                 proposer.receivePromise(UID, new ProposalId((List<Integer>) jsonObject.get("proposal_id")),
-                        new ProposalId(0,0) /*TODO apakah ganti yang bener atau gimana, soalnya di protokol yang dari spek ngga ada ini*/,
+                        new ProposalId(-1,-1) /*TODO apakah ganti yang bener atau gimana, soalnya di protokol yang dari spek ngga ada ini*/,
                         (Integer) jsonObject.get("previous_accepted"));
             }else if (receivedMethod.equals("acceptAccepted")){
                 proposer.receiveAccepted();
                 continueListening = false;
+            }else if(receivedMethod.equals("rejected")) {
+                //TODO Rejected promise
             }
+
         } catch (ParseException e) {
             try {
                 messenger.sendError(UID, "message error");
