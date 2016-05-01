@@ -95,6 +95,7 @@ public class Client {
             } else if(status.equals("ok")){
                 ui.displaySuccessfulResponse("Join");
                 playerInfo.setPlayerId(Integer.parseInt(joinResponse.get("player_id").toString()));
+                retryRequest = false;
             } else if(status.equals("fail")) {
                 ui.displayFailedResponse("Join", "connection failure: error response from server");
                 retryRequest = true;
@@ -161,6 +162,7 @@ public class Client {
                     serverAddress.getAddress(),
                     serverAddress.getPort()
             );
+            communicator.start();
         } catch (IOException e) {
             e.printStackTrace();
         }
