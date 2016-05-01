@@ -5,10 +5,8 @@ import Client.Communications.TCPRequestResponseChannel;
 import Client.Misc.ClientInfo;
 import Client.Paxos.Messenger;
 import Client.Paxos.PaxosController;
-import jdk.nashorn.internal.parser.JSONParser;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
-import org.json.simple.parser.ParseException;
 
 import java.io.IOException;
 import java.net.*;
@@ -501,7 +499,7 @@ public class Client {
         if (isKPU){
             assert voteListener != null;
             voteListener.join();
-            JSONObject serverNotif = voteListener.getVoteResult();
+            JSONObject serverNotif = voteListener.getInfoKilled();
             try {
                 JSONObject serverResponse = communicator.sendRequestAndGetResponse(serverNotif);
                 if (serverResponse.get("status").equals("fail")){
@@ -645,7 +643,7 @@ public class Client {
             killWerewolfRequest.put("method", "vote_werewolf");
             killWerewolfRequest.put("player_id", playerId);
 
-            Messenger.sendJSONObject(killWerewolfRequest, datagramSocket, getSocketAddressFromPlayerId(playerId));
+            Messenger.sendJSONObject(killWerewolfRequest, datagramSocket, getSocketAddressFromPlayerId(kpu_id));
         }
     }
 
@@ -667,6 +665,7 @@ public class Client {
                 InetSocketAddress inetSocketAddress = new InetSocketAddress(
                         clientInfo.getAddress(),
                         clientInfo.getPort());
+                return inetSocketAddress;
             }
         }
         return null;

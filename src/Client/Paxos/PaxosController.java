@@ -11,6 +11,7 @@ import java.net.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Created by nim_13512501 on 4/30/16.
@@ -64,6 +65,7 @@ public class PaxosController extends Thread{
         acceptor.messenger = messenger;
         proposer = new Proposer(this.thisPlayerId, messenger, (clientList.size()-2)/2+1);
 
+        continueListening = new AtomicBoolean();
     }
 
     @Override
@@ -98,10 +100,10 @@ public class PaxosController extends Thread{
         runSisanya();
     }
 
-    private boolean continueListening;
+    private AtomicBoolean continueListening;
 
     public void runSisanya() throws SocketException {
-        continueListening = true;
+        continueListening.set(true);
         byte [] buf = new byte[65507];
         DatagramPacket message = new DatagramPacket(buf, 65507);
 
@@ -110,7 +112,7 @@ public class PaxosController extends Thread{
 
         long roundTimeStart = System.currentTimeMillis();
 
-        while (continueListening){
+        while (continueListening.get()){
             long roundTimeElapsed = System.currentTimeMillis() - roundTimeStart;
             if (roundTimeElapsed > roundTimeout){
                 roundTimeStart = System.currentTimeMillis();
@@ -132,7 +134,7 @@ public class PaxosController extends Thread{
     }
 
     public void stopPaxos(){
-        continueListening = false;
+        continueListening.set(false);
     }
 
     public void handleMessage(DatagramPacket message){
@@ -184,7 +186,7 @@ public class PaxosController extends Thread{
                         Integer.parseInt (jsonObject.get("previous_accepted").toString()));
             }else if (receivedMethod.equals("acceptAccepted")){
                 proposer.receiveAccepted();
-                continueListening = false;
+                continueListening.set(false);
             }else if(receivedMethod.equals("rejected")) {
                 //TODO Rejected promise
             }

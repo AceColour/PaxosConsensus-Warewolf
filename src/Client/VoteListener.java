@@ -8,10 +8,7 @@ import org.json.simple.parser.ParseException;
 
 import java.io.IOException;
 import java.net.*;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created by mfikria on 01/05/2016.
@@ -65,10 +62,10 @@ public class VoteListener extends Thread{
             try {
 
                 // Check whether it is day or night
-                if(voteResult.size() >= clientList.size() && isDay){
+                if(hasVotedId.size() >= clientList.size() && isDay){
                     continueListening = false;
                     break;
-                }else if(voteResult.size() >= getRemainingWerewolf() && !isDay) {
+                }else if(hasVotedId.size() >= getRemainingWerewolf() && !isDay) {
                     continueListening = false;
                     break;
                 }
@@ -117,31 +114,60 @@ public class VoteListener extends Thread{
 
                     Boolean isFound = false;
                     for (Map.Entry<Integer, Integer> entry : voteResult.entrySet()) {
-                        if(entry.getKey() == playerId && !hasVotedId.contains(playerId)){
+                        if(entry.getKey() == playerId && !hasVotedId.contains(UID)){
                             countVote = entry.getValue();
                             countVote++;
+                            entry.setValue(countVote);
                             isFound = true;
-                            hasVotedId.add(playerId);
+                            hasVotedId.add(UID);
                         }
                     }
-                    if(!isFound)
+                    if(!isFound && !hasVotedId.contains(UID)){
                         voteResult.put(playerId,1);
+                        hasVotedId.add(UID);
                     }
             }
-        } catch (ParseException e) {
+        }
+        }catch (ParseException e) {
 
         }
     }
 
     // Get JSONObject from vote result
-    public JSONObject getVoteResult() {
+    public JSONObject getInfoKilled() {
         JSONParser parser = new JSONParser();
         JSONObject jsonObject = new JSONObject();
-        try {
-            jsonObject = (JSONObject) parser.parse(voteResult.toString());
-        } catch (ParseException e) {
-            e.printStackTrace();
+
+        List<List<Integer>> voteResultList = new LinkedList<List<Integer>>();
+        //search majority
+        int maxVal = 0;
+        boolean majorityExists = false;
+        int maxKey = -1;
+        for (Map.Entry<Integer, Integer> entry : voteResult.entrySet()){
+            if (entry.getValue()>maxVal){
+                maxKey=entry.getKey();
+                maxVal=entry.getValue();
+                majorityExists=true;
+            }else if (entry.getValue()==maxVal){ //lebih dari satu key memiliki maximum value yang sama
+                majorityExists=false;
+            }
+            List<Integer> thisEntry = new ArrayList<Integer>();
+            thisEntry.add(entry.getKey());thisEntry.add(entry.getValue());
+            voteResultList.add(thisEntry);
         }
+
+
+        //konstruksi jsonObject
+        if (isDay)
+                jsonObject.put("method","vote_result_civilian");
+        else    jsonObject.put("method","vote_result_werewolf");
+        if (majorityExists){
+            jsonObject.put("vote_status",1);
+            jsonObject.put("player_killed", maxKey);
+        }else    jsonObject.put("vote_status",-1);
+        jsonObject.put("vote_result",voteResultList);
+
+
         return jsonObject;
     }
 
