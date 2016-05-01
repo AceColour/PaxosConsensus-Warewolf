@@ -320,20 +320,20 @@ public class Client {
 
             // Check status response from server
             if (status == null) {
-                ui.displayFailedResponse("Retrieve List Client", "connection failure: error response from server");
+                ui.displayFailedResponse("Ready Up", "connection failure: error response from server");
                 retryRequest = true;
             } else if(status.equals("ok")){
-                ui.displaySuccessfulResponse("Retrieve List Client");
+                ui.displaySuccessfulResponse("Ready Up");
                 isReady = true;
                 retryRequest = false;
             } else if(status.equals("fail")) {
-                ui.displayFailedResponse("Retrieve List Client", "connection failure: error response from server");
+                ui.displayFailedResponse("Ready Up", "connection failure: error response from server");
                 retryRequest = true;
             } else if(status.equals("error")){
-                ui.displayErrorResponse("Retrieve List Client", "error: " + readyUpResponse.get("description"));
+                ui.displayErrorResponse("Ready Up", "error: " + readyUpResponse.get("description"));
                 retryRequest = true;
             } else {
-                ui.displayErrorResponse("Retrieve List Client", "error: error is undetermined");
+                ui.displayErrorResponse("Ready Up", "error: error is undetermined");
                 retryRequest = true;
             }
         }while (retryRequest); // while there is error or failed response, try send request again

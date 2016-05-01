@@ -118,7 +118,9 @@ public class Game extends Thread{
 
     public void waitkillRequestReceived(){
         try {
-            killPlayerRequestReceivedLock.wait();
+            synchronized(killPlayerRequestReceivedLock){
+                killPlayerRequestReceivedLock.wait();
+            }
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
@@ -130,6 +132,7 @@ public class Game extends Thread{
 
     public void startGame() {
         this.startedStatus = true;
+        dayStatus=true;
         assignRoles();
         learner = new Learner(quorumSize());
         sendStartGameBroadcast();
@@ -221,7 +224,7 @@ public class Game extends Thread{
             Player player = (Player) playerObject;
             JSONObject request = new JSONObject();
             request.put("method", "start");
-            request.put("time", "night");
+            request.put("time", dayStatus?"day":"night");
             request.put("role", player.getRole());
             if (player.getRole().equals("werewolf")) {
                 JSONArray jsonArray = new JSONArray();
@@ -233,7 +236,7 @@ public class Game extends Thread{
                         jsonArray.add(playerIterator.getUsername());
                     }
                 }
-                request.put("friends", jsonArray);
+                request.put("friend", jsonArray);
             }
             request.put("description", "game is started");
 
@@ -397,7 +400,7 @@ public class Game extends Thread{
     private void broadcastChangePhase() {
         JSONObject request = new JSONObject();
         request.put("method","change_phase");
-        request.put("phase",dayStatus?"day":"night");
+        request.put("time",dayStatus?"day":"night");
         request.put("days",dayCount);
 
         for (Object playerObject : playerConnected){

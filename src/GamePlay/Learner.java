@@ -20,8 +20,8 @@ public class Learner {
         quorumReached.set(false);
     }
 
-    public int waitFinalValue() throws InterruptedException {
-        while (!quorumReached.get()){
+    public synchronized int waitFinalValue() throws InterruptedException {
+        while (!quorumReached.get()) synchronized(quorumReached) {
             quorumReached.wait();
         }
         return getFinalValue();
@@ -51,9 +51,9 @@ public class Learner {
 
         Integer thisCount = acceptcounts.get(acceptedValue);
 
+        System.out.println(acceptedValue + " got " + thisCount + "accepteds");
 
-
-        if (thisCount == quorumSize) {
+        if (thisCount == quorumSize){
             finalValue = acceptedValue;
             acceptcounts.clear();
             acceptors.clear();
