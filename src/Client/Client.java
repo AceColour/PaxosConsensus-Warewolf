@@ -453,6 +453,9 @@ public class Client {
     public void play() throws IOException, InterruptedException {
         gameOver = false;
 
+        if (isDay) { //TAIK TERNYATA BERUBAH JADINYA MULAI LANGSUNG SIANG DAN NGGA PERLU CHANGE PHASE
+            doPaxos();
+        }
 
         do{
 
@@ -462,9 +465,6 @@ public class Client {
                changePhase(serverCommand);
 
                 if (isDay) {
-                    //TODO show civilian killed if day and not gameover
-                    //TODO show werewolf/civilian killed if night and not gameover
-
                     doPaxos();
                 }
            }else if (serverCommand.get("method").equals("vote_now")){
