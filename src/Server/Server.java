@@ -1,7 +1,11 @@
 package Server;
 
+import Client.Communications.TCPRequestResponseChannel;
 import GamePlay.*;
+import org.json.simple.JSONObject;
 
+import java.io.IOException;
+import java.net.InetAddress;
 import java.util.HashMap;
 import java.util.HashSet;
 
@@ -11,6 +15,8 @@ import java.util.HashSet;
 public class Server {
     private int currentLastPlayerId = -1;
     private Game game = new Game();
+
+    private TCPRequestResponseChannel communicator;
 
     public int receiveJoin(String _ipAddr, int _portNo, String _username) {
         // receiveJoin will return integer >= 0 if the client successfully inserted become a player.
@@ -41,5 +47,27 @@ public class Server {
 
     public HashSet getClientList() {
         return game.getPlayerConnected();
+    }
+
+    public void run() {
+        try {
+            communicator = new TCPRequestResponseChannel(InetAddress.getLocalHost(), 8088);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        try {
+            JSONObject temp = communicator.getLastRequestDariSeberangSana();
+            System.out.println(temp);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void main(String[] args) {
+        Server server = new Server();
+
+        server.run();
+
     }
 }
