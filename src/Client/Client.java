@@ -491,7 +491,10 @@ public class Client {
                     JSONObject response = new JSONObject();
                     if (message.containsKey("kpu_id")){
                         response.put("status", "ok");
-                        kpu_id = (Integer) message.get("kpu_id");
+                        kpu_id = Integer.parseInt(message.get("kpu_id").toString());
+                        if (kpu_id == playerInfo.getPlayerId())
+                            isKPU = true;
+                        KPUSelected = true;
                     }else{
                         response.put("status", "error");
                         response.put("description", "value not found");
