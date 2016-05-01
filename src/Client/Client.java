@@ -54,7 +54,7 @@ public class Client {
     public Client(){
         // Initialization
         ui = new CommandLineUI();
-        // playerInfo = new ClientInfo()
+        playerInfo = new ClientInfo(-1,-1,null,-1,null);
         isKPU = false;
         isDay = false;
         numPlayer = 0;
@@ -260,14 +260,8 @@ public class Client {
         }while (retryRequest); // while there is error or failed response, try send request again
     }
 
-    public void changePhase() {
+    public void changePhase(JSONObject recv) {
         // listening to the port
-        JSONObject recv = null;
-        try {
-            recv = communicator.getLastRequestDariSeberangSana();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
         if(recv.get("method").equals("change_phase")) {
             isDay = recv.get("time").equals("day");
             daysCount = Integer.parseInt(recv.get("days").toString());
@@ -350,63 +344,42 @@ public class Client {
         }while (retryRequest); // while there is error or failed response, try send request again
     }
 
+    boolean gameOver;
+
+    int kpu_id;
+
+    DatagramSocket datagramSocket;
     //TODO refactor ini
     public void play() throws IOException, InterruptedException {
-        DatagramSocket datagramSocket = new DatagramSocket(UDPAddress.getPort());
-        boolean gameOver = false;
+        datagramSocket = new DatagramSocket(UDPAddress.getPort());
+        gameOver = false;
 
-        int kpu_id;
 
         do{
+
+           JSONObject serverCommand = communicator.getLastRequestDariSeberangSana();
             //change phase
-           changePhase();
+           if (serverCommand.get("method").equals("change_phase")){
+               changePhase(serverCommand);
 
-            if (isDay) {
-                //TODO show civilian killed if day and not gameover
-                //TODO show werewolf/civilian killed if night and not gameover
+                if (isDay) {
+                    //TODO show civilian killed if day and not gameover
+                    //TODO show werewolf/civilian killed if night and not gameover
 
-                //run paxos if day and not gameover
-                paxosController = new PaxosController(listPlayer, playerInfo.getPlayerId(), datagramSocket);
-                paxosController.start();
+                    doPaxos();
+                }
+           }else if (serverCommand.get("method").equals("vote_now")){
+               JSONObject response = new JSONObject();
+               response.put("status","ok");
 
-                //tunggu perintah vote dari server
-                //periksa lagi apakah perintah vote itu sebelum atau sesudah paxos
-                boolean gotVoteCommand = false;
-                do {
-                    JSONObject message = communicator.getLastRequestDariSeberangSana();
-                    if (isMethodGameOver(message)) {
-                        gameOver = true;
-                        JSONObject response = new JSONObject();
-                        response.put("status", "ok");
-                        communicator.sendResponseKeSeberangSana(response);
-                    } else if (message.get("method").equals("vote_now")) {
-
-                        isDay = message.get("phase").equals("day");
-                        JSONObject response = new JSONObject();
-                        response.put("status", "ok");
-                        communicator.sendResponseKeSeberangSana(response);
-                    } else {
-                        JSONObject response = new JSONObject();
-                        response.put("status", "fail");
-                        response.put("description", "client cannot conform");
-                        communicator.sendResponseKeSeberangSana(response);
-                    }
-                } while (!gotVoteCommand);
-
-                paxosController.stopPaxos();
-            }
+               System.out.println("VOTING NOT IMPLEMENTED");
             //TODO run voting process
-            if (!isDay && playerInfo.getRole().equals("werewolf")){
-                //TODO vote as werewolf
-            }else{
-                //TODO vote sisanya
-            }
+           }else if (serverCommand.get("method").equals("game_over")){
+                gameOver(serverCommand);
+           }
+
         }while (!gameOver);
 
-    }
-
-    private boolean isMethodGameOver(JSONObject message){
-        return message.get("method").equals("game_over");
     }
 
     public int countActivePlayers() {
@@ -419,8 +392,72 @@ public class Client {
     }
 
     /* DOING PAXOS */
-    public void doPaxos(){
+    public void doPaxos() throws SocketException {
+        //run paxos if day and not gameover
+        paxosController = new PaxosController(listPlayer, playerInfo.getPlayerId(), datagramSocket);
+        paxosController.start();
 
+        //tunggu perintah vote dari server
+        //periksa lagi apakah perintah vote itu sebelum atau sesudah paxos
+        boolean KPUSelected = false;
+        try {
+            do {
+                JSONObject message = null;
+                    message = communicator.getLastRequestDariSeberangSana();
+                if (message.get("method").equals("game_over")) {
+                    gameOver = true;
+                    JSONObject response = new JSONObject();
+                    response.put("status", "ok");
+                    communicator.sendResponseKeSeberangSana(response);
+                } else if (message.get("method").equals("kpu_selected")) {
+                    JSONObject response = new JSONObject();
+                    if (message.containsKey("kpu_id")){
+                        response.put("status", "ok");
+                        kpu_id = (Integer) message.get("kpu_id");
+                    }else{
+                        response.put("status", "error");
+                        response.put("description", "value not found");
+                    }
+                    communicator.sendResponseKeSeberangSana(response);
+                } else {
+                    JSONObject response = new JSONObject();
+                    response.put("status", "fail");
+                    response.put("description", "client cannot conform");
+                    communicator.sendResponseKeSeberangSana(response);
+                }
+            } while (!KPUSelected);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        paxosController.stopPaxos();
+    }
+
+    public void gameOver(JSONObject serverCommand){
+        if (serverCommand.containsKey("winner")){
+            JSONObject response = new JSONObject();
+            response.put("status", "ok");
+            try {
+                communicator.sendResponseKeSeberangSana(response);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+            ui.displayGameOver((String) serverCommand.get("winner"));
+            gameOver = true;
+
+        }else{
+            JSONObject response = new JSONObject();
+            response.put("status", "fail");
+            response.put("description","no winner?");
+            try {
+                communicator.sendResponseKeSeberangSana(response);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     public static void main(String [] args) throws IOException, InterruptedException {
