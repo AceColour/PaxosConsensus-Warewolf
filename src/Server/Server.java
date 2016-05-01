@@ -245,9 +245,19 @@ public class Server extends Thread {
         } while (!leaveStatus);
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws InterruptedException {
+
+        System.out.println("port: ");
+        Scanner sc = new Scanner(System.in);
+
+        while (!sc.hasNextInt()){
+            sleep(20);
+        }
+
+        int port = sc.nextInt();
+
         try {
-            serverSocket = new ServerSocket(8088);
+            serverSocket = new ServerSocket(port);
             System.out.println(InetAddress.getLocalHost());
         } catch (IOException e) {
             e.printStackTrace();
