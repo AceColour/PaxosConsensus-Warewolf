@@ -207,6 +207,7 @@ public class Client {
                     leave();
             }
         };
+        leaveThread.start();
 
         isStart = false;
         do{

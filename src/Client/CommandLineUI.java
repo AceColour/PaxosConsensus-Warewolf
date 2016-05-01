@@ -165,7 +165,7 @@ public class CommandLineUI implements UI{
             Scanner scanIn = new Scanner(System.in);
             if (scanIn.hasNext()){
                 result = scanIn.nextLine();
-                if (result.equals("leave"))
+                if (result.toLowerCase().equals("leave"))
                     waiting = false;
             }else
                 try {
