@@ -1,5 +1,6 @@
 package Client.Paxos;
 
+import Client.Communications.TCPRequestResponseChannel;
 import Client.Misc.ClientInfo;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -25,7 +26,7 @@ public class PaxosController extends Thread{
     int idKeduaTerbesar = 0;
 
     DatagramSocket datagramSocket;
-
+    TCPRequestResponseChannel tcpRequestResponseChannel;
     /**
      *
      * @param clientList a clientlist received from the server
@@ -46,7 +47,7 @@ public class PaxosController extends Thread{
                 idKeduaTerbesar = clientInfo.getPlayerId();
         }
 
-        messenger = new Messenger(clientList,idTerbesar,idKeduaTerbesar,datagramSocket);
+        messenger = new Messenger(clientList,idTerbesar,idKeduaTerbesar,datagramSocket, tcpRequestResponseChannel);
         acceptor = new Acceptor();
         acceptor.messenger = messenger;
         proposer = new Proposer(messenger, (clientList.size()-2)/2+1);
