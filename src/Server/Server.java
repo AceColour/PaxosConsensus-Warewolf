@@ -94,8 +94,16 @@ public class Server extends Thread {
                     this.aliveStatus = true;
                     this.playerId = this.receiveJoin(request.get("udp_address").toString(), Integer.parseInt(request.get("udp_port").toString()), request.get("username").toString());
                     JSONObject response = new JSONObject();
-                    response.put("status", "ok");
-                    response.put("player_id", this.playerId);
+                    if (this.playerId>=0){
+                        response.put("status", "ok");
+                        response.put("player_id", this.playerId);
+                    }else if (this.playerId==-1){
+                        response.put("status", "fail");
+                        response.put("description","username exists");
+                    }else /*this.playerId==-2*/{
+                        response.put("status", "fail");
+                        response.put("description","game already started");
+                    }
                     communicator.sendResponseKeSeberangSana(response);
 
                 }
