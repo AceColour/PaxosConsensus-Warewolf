@@ -189,7 +189,7 @@ public class CommandLineUI implements UI{
                 try {
                     Thread.sleep(1);
                 } catch (InterruptedException e) {
-                    waiting = false;
+                    waiting = true;
                 }
         }
         return result.equals("leave");
