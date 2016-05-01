@@ -62,7 +62,7 @@ public class VoteListener extends Thread{
             try {
 
                 // Check whether it is day or night
-                if(hasVotedId.size() >= clientList.size() && isDay){
+                if(hasVotedId.size() >= getNumRemainingPlayer() && isDay){
                     continueListening = false;
                     break;
                 }else if(hasVotedId.size() >= getRemainingWerewolf() && !isDay) {
@@ -183,10 +183,20 @@ public class VoteListener extends Thread{
         int count = 2;
         for(ClientInfo ci : clientList){
             if (ci.getRole()!=null)
-            if(ci.getRole().equals("werewolf")){
+            if(ci.getRole().equals("werewolf") && ci.getIsAlive()==0){
                 count--;
             }
         }
         return count;
+    }
+
+    public int getNumRemainingPlayer(){
+        int count = 0;
+        for(ClientInfo ci : clientList){
+            if (ci.getIsAlive()==1)
+                count++;
+        }
+        return count;
+
     }
 }

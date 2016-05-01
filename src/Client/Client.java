@@ -496,7 +496,8 @@ public class Client {
             }
         }
 
-        sendVote();
+        if (playerInfo.getIsAlive()==1)
+            sendVote();
 
         if (isKPU){
             assert voteListener != null;
