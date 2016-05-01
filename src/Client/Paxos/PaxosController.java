@@ -22,7 +22,6 @@ public class PaxosController extends Thread{
     Acceptor acceptor;
     Proposer proposer;
     Messenger messenger;
-    CommandLineUI ui;
     int thisPlayerId;
 
     int idTerbesar = 0;
@@ -81,7 +80,7 @@ public class PaxosController extends Thread{
     }
 
     public void runAsProposer() throws SocketException {
-        proposer.setProposedValue(ui.askKPUId());
+        proposer.setProposedValue(thisPlayerId);//ui.askKPUId());
         proposer.prepare();
         runSisanya();
     }
