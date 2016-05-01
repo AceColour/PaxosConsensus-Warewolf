@@ -192,12 +192,6 @@ public class Game {
         return dayStatus;
     }
 
-    public void sendBroadcast(String strSend) {
-        for (Server server : serverList) {
-            server.send(server.getClientSocket(), strSend);
-        }
-    }
-
     public void sendStartGameBroadcast() {
 
         for (Server server : serverList) {
