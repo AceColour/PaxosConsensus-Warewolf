@@ -77,7 +77,7 @@ public class Client {
             JSONObject joinRequest = new JSONObject();
             joinRequest.put("method", "join");
             joinRequest.put("username", playerInfo.getUsername());
-            joinRequest.put("udp_address", UDPAddress.getAddress().toString());
+            joinRequest.put("udp_address", UDPAddress.getAddress().getHostAddress());
             joinRequest.put("udp_port", UDPAddress.getPort());
 
             // Get JSON Object as join response from server
@@ -351,9 +351,6 @@ public class Client {
             response.put("status", "ok");
             try {
                 communicator.sendResponseKeSeberangSana(response);
-
-                // Retrieve the latest client list
-                retrieveListClient();
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -531,6 +528,14 @@ public class Client {
 
     /* DOING PAXOS */
     public void doPaxos() throws SocketException {
+
+        // Retrieve the latest client list
+        try {
+            retrieveListClient();
+        } catch (UnknownHostException e) {
+            e.printStackTrace();
+        }
+
         //run paxos if day and not gameover
         paxosController = new PaxosController(listPlayer, playerInfo.getPlayerId(), datagramSocket);
         paxosController.start();

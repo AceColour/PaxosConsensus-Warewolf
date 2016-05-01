@@ -109,6 +109,7 @@ public class Server extends Thread {
                         response.put("description","required parameter not found");
                     }
                     communicator.sendResponseKeSeberangSana(response);
+                    System.out.println(response.toJSONString());
 
                 }
                 // PROTOCOL NO. 2 (+ PROTOCOL NO. 12 INCLUSIVE (jangan): START GAME) TODO: Random Werewolf player and START GAME
@@ -152,7 +153,7 @@ public class Server extends Thread {
                         JSONObject playerEachConnectedJSONObject = new JSONObject();
                         currentPlayerConnectedIterator = iterator.next();
                         playerEachConnectedJSONObject.put("player_id", currentPlayerConnectedIterator.getPlayerId());
-                        playerEachConnectedJSONObject.put("is_alive", currentPlayerConnectedIterator.getAliveStatus());
+                        playerEachConnectedJSONObject.put("is_alive", currentPlayerConnectedIterator.getAliveStatus()?1:0);
                         playerEachConnectedJSONObject.put("address", currentPlayerConnectedIterator.getIpAddress());
                         playerEachConnectedJSONObject.put("port", currentPlayerConnectedIterator.getPortNumber());
                         playerEachConnectedJSONObject.put("username", currentPlayerConnectedIterator.getUsername());
