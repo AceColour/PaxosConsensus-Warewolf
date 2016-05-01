@@ -198,8 +198,15 @@ public class Client {
     }
 
     public void waitForStart() {
-        Boolean isLeave;
-        isLeave = ui.askLeaveWhileWaiting();
+
+        Thread leaveThread = new Thread(){
+            @Override
+            public void run(){
+
+                if (ui.askLeaveWhileWaiting())
+                    leave();
+            }
+        };
 
         isStart = false;
         do{
@@ -239,6 +246,8 @@ public class Client {
                 e.printStackTrace();
             }
         }while (!isStart);
+
+        leaveThread.interrupt();
     }
 
     public void leave() {
