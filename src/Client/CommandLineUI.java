@@ -2,6 +2,10 @@ package Client;
 
 import Client.Misc.ClientInfo;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.Reader;
 import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.Scanner;
@@ -67,6 +71,13 @@ public class CommandLineUI implements UI{
         System.out.print("Player Id=: ");
 
         Scanner scanIn = new Scanner(System.in);
+        while (!scanIn.hasNextInt()){
+            if (scanIn.hasNext()) scanIn.next(); else try {
+                Thread.sleep(1);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
         return scanIn.nextInt();
     }
 
@@ -77,6 +88,13 @@ public class CommandLineUI implements UI{
         System.out.print("Player Id=: ");
 
         Scanner scanIn = new Scanner(System.in);
+        while (!scanIn.hasNextInt()){
+            if (scanIn.hasNext()) scanIn.next(); else try {
+                Thread.sleep(1);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
         return scanIn.nextInt();
     }
 
@@ -168,6 +186,13 @@ public class CommandLineUI implements UI{
     public int askPlayerKilled(String phase) {
         System.out.println("Vote kill: ");
         Scanner sc = new Scanner(System.in);
+        while (!sc.hasNextInt()){
+            if (sc.hasNext()) sc.next(); else try {
+            Thread.sleep(1);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        }
 
         return sc.nextInt();
     }
@@ -180,17 +205,19 @@ public class CommandLineUI implements UI{
         waiting = true;
         String result = "";
         while (waiting){
-            Scanner scanIn = new Scanner(System.in);
-            if (scanIn.hasNext()){
-                result = scanIn.nextLine();
-                if (result.toLowerCase().equals("leave"))
-                    waiting = false;
-            }else
-                try {
-                    Thread.sleep(1);
-                } catch (InterruptedException e) {
-                    waiting = true;
+            BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
+
+            try {
+                // wait until we have data to complete a readLine()
+                while (!in.ready()  /*  ADD SHUTDOWN CHECK HERE */) {
+                    Thread.sleep(200);
                 }
+                result= in.readLine();
+            } catch (InterruptedException e) {
+                waiting=false;
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
         return result.equals("leave");
     }

@@ -555,8 +555,7 @@ public class Client {
                     if (message.containsKey("kpu_id")){
                         response.put("status", "ok");
                         kpu_id = Integer.parseInt(message.get("kpu_id").toString());
-                        if (kpu_id == playerInfo.getPlayerId())
-                            isKPU = true;
+                        isKPU = kpu_id == playerInfo.getPlayerId();
                         KPUSelected = true;
                     }else{
                         response.put("status", "error");
@@ -620,7 +619,7 @@ public class Client {
             int votedID = ui.killCivilianId();
             while (! playerIDExists(votedID)){
                 ui.displayFailedResponse("wrong number", "client ID " + votedID + "doesn't exist");
-                ui.askPlayerKilled("day");
+                votedID = ui.askPlayerKilled("day");
             }
 
             voteKillCivilian(votedID);
@@ -629,7 +628,7 @@ public class Client {
             int votedID = ui.killWerewolfId();
             while (! playerIDExists(votedID)){
                 ui.displayFailedResponse("wrong number", "client ID " + votedID + "doesn't exist");
-                ui.askPlayerKilled("night");
+                votedID = ui.askPlayerKilled("night");
             }
 
             voteKillWerewolf(votedID);

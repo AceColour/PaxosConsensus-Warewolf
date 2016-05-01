@@ -66,6 +66,14 @@ public class Game extends Thread{
     private Object killPlayerRequestReceivedLock = new Object();
     private boolean adaPlayerDibunuh;
 
+    public void noKillPlayer(){
+        adaPlayerDibunuh = false;
+
+        synchronized(killPlayerRequestReceivedLock){
+            killPlayerRequestReceivedLock.notify();
+        }
+    }
+
     public void killPlayer(int _playerId) {
         boolean found = false;
         Iterator<Player> iterator = playerCitizenActiveList.iterator();
@@ -76,18 +84,6 @@ public class Game extends Thread{
                 this.playerCitizenDeadList.add(currentPlayerIterator);
                 found = true;
                 iterator.remove();
-
-                // Also set aliveStatus in playerConnected.
-                Iterator<Player> iteratorPlayerConnected = playerConnected.iterator();
-                Player currentPlayerConnectedIterator;
-                boolean foundPlayerConnected = false;
-                while (foundPlayerConnected && iteratorPlayerConnected.hasNext()) {
-                    currentPlayerConnectedIterator = iteratorPlayerConnected.next();
-                    if (currentPlayerConnectedIterator.getPlayerId() == _playerId) {
-                        currentPlayerConnectedIterator.setAliveStatus(false);
-                        adaPlayerDibunuh = true;
-                    }
-                }
             }
         }
 
@@ -99,19 +95,19 @@ public class Game extends Thread{
                 found = true;
                 iterator.remove();
 
-                // Also set aliveStatus in playerConnected.
-                Iterator<Player> iteratorPlayerConnected = playerConnected.iterator();
-                Player currentPlayerConnectedIterator;
-                boolean foundPlayerConnected = false;
-                while (foundPlayerConnected && iteratorPlayerConnected.hasNext()) {
-                    currentPlayerConnectedIterator = iteratorPlayerConnected.next();
-                    if (currentPlayerConnectedIterator.getPlayerId() == _playerId) {
-                        currentPlayerConnectedIterator.setAliveStatus(false);
-                        adaPlayerDibunuh = true;
-                    }
-                }
             }
         }
+
+        // Also set aliveStatus in playerConnected.
+        for (Object p: playerConnected){
+            Player player = (Player) p;
+            if (player.getPlayerId() == _playerId){
+                player.setAliveStatus(false);
+            }
+        }
+
+        adaPlayerDibunuh = true;
+
         synchronized(killPlayerRequestReceivedLock){
             killPlayerRequestReceivedLock.notify();
         }
@@ -379,9 +375,9 @@ public class Game extends Thread{
         JSONObject request = new JSONObject();
         request.put("method","game_over");
         if (getPlayerWerewolfActiveList().size()==0)
-            request.put("winner","werewolf");
-        else
             request.put("winner","player");
+        else
+            request.put("winner","winner");
 
         for (Object playerObject : playerConnected){
             Player player = (Player) playerObject;

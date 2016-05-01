@@ -182,33 +182,27 @@ public class Server extends Thread {
 
                     communicator.sendResponseKeSeberangSana(response);
                 }
-                // PROTOCOL NO. 9: INFO WEREWOLF KILLED (PROTOCOL NO. 13 INCLUSIVE: Change phase)
+                // PROTOCOL NO. 9: INFO WEREWOLF KILLED
                 else if (request.get("method").equals("vote_result_werewolf")) {
-                    game.killPlayer(Integer.parseInt(request.get("player_killed").toString()));
-                    JSONObject jsonObject = new JSONObject();
-                    jsonObject.put("status", "ok");
-                    jsonObject.put("description", "player killed");
-
-                    // Change phase
-                    game.changeDay();
-                    jsonObject = new JSONObject();
-                    jsonObject.put("method", "change_phase");
-                    jsonObject.put("time", game.getDayStatus() ? "day" : "night");
-                    jsonObject.put("description", "");
+                    if (Integer.parseInt(request.get("vote_status").toString())!=-1)
+                        game.killPlayer(Integer.parseInt(request.get("player_killed").toString()));
+                    else
+                        game.noKillPlayer();
+                    JSONObject response = new JSONObject();
+                    response.put("status", "ok");
+                    response.put("description", "player killed");
+                    communicator.sendResponseKeSeberangSana(response);
                 }
-                // PROTOCOL NO. 11: INFO CIVILIAN KILLED (PROTOCOL NO. 13 INCLUSIVE: Change phase)
+                // PROTOCOL NO. 11: INFO CIVILIAN KILLED
                 else if (request.get("method").equals("vote_result_civilian")) {
-                    game.killPlayer(Integer.parseInt (request.get("player_killed").toString()));
-                    JSONObject jsonObject = new JSONObject();
-                    jsonObject.put("status", "ok");
-                    jsonObject.put("description", "player killed");
-
-                    // Change phase
-                    game.changeDay();
-                    jsonObject = new JSONObject();
-                    jsonObject.put("method", "change_phase");
-                    jsonObject.put("time", game.getDayStatus() ? "day" : "night");
-                    jsonObject.put("description", "");
+                    if (Integer.parseInt(request.get("vote_status").toString())!=-1)
+                        game.killPlayer(Integer.parseInt(request.get("player_killed").toString()));
+                    else
+                        game.noKillPlayer();
+                    JSONObject response = new JSONObject();
+                    response.put("status", "ok");
+                    response.put("description", "player killed");
+                    communicator.sendResponseKeSeberangSana(response);
                 }
                 else if (request.get("method").equals("vote_result")) { // Cannot decide
                     if (game.getDayStatus() == false) { // Werewolf must vote again and again
