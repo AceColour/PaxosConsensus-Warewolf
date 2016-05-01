@@ -32,6 +32,7 @@ public class TCPRequestResponseChannel extends Thread{
         requestQueue = new LinkedBlockingQueue<JSONObject>();
         responseQueue = new LinkedBlockingQueue<JSONObject>();
         hasTakenARequestButNotYetResponded = false;
+        sendRequestAndGetResponseLock = new Object();
     }
 
     public TCPRequestResponseChannel(InetAddress addressSana, int portSana) throws IOException {
@@ -40,7 +41,10 @@ public class TCPRequestResponseChannel extends Thread{
         requestQueue = new LinkedBlockingQueue<JSONObject>();
         responseQueue = new LinkedBlockingQueue<JSONObject>();
         hasTakenARequestButNotYetResponded = false;
+        sendRequestAndGetResponseLock = new Object();
     }
+
+    Object sendRequestAndGetResponseLock;
 
     /**
      * akan blocking hingga mendapat jawaban
@@ -49,11 +53,16 @@ public class TCPRequestResponseChannel extends Thread{
      * @return response dari sana
      */
     public JSONObject sendRequestAndGetResponse(JSONObject request) throws IOException, InterruptedException {
-        if (!request.containsKey("method"))
-            throw new IllegalArgumentException("NO_METHOD_FIELD");
-        sendJSON(request);
+        JSONObject response;
+        synchronized(sendRequestAndGetResponseLock){
+            if (!request.containsKey("method"))
+                throw new IllegalArgumentException("NO_METHOD_FIELD");
+            sendJSON(request);
 
-        return responseQueue.take();
+            response = responseQueue.take();
+        }
+
+        return response;
     }
 
     /**
