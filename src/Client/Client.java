@@ -619,17 +619,19 @@ public class Client {
 
     public void sendVote(){
         if (isDay){
-            int votedID = ui.askPlayerKilled("day");
+            int votedID = ui.killCivilianId();
             while (! playerIDExists(votedID)){
                 ui.displayFailedResponse("wrong number", "client ID " + votedID + "doesn't exist");
+                ui.askPlayerKilled("day");
             }
 
             voteKillCivilian(votedID);
 
         }else if (playerInfo.getRole().equals("werewolf")){
-            int votedID = ui.askPlayerKilled("night");
+            int votedID = ui.killWerewolfId();
             while (! playerIDExists(votedID)){
                 ui.displayFailedResponse("wrong number", "client ID " + votedID + "doesn't exist");
+                ui.askPlayerKilled("night");
             }
 
             voteKillWerewolf(votedID);
@@ -641,7 +643,7 @@ public class Client {
             // Create JSON Object for killWerewolf request
             JSONObject killWerewolfRequest = new JSONObject();
             killWerewolfRequest.put("method", "vote_werewolf");
-            killWerewolfRequest.put("player_id", ui.killWerewolfId());
+            killWerewolfRequest.put("player_id", playerId);
 
             Messenger.sendJSONObject(killWerewolfRequest, datagramSocket, getSocketAddressFromPlayerId(playerId));
         }
@@ -653,9 +655,9 @@ public class Client {
             // Create JSON Object for killWerewolf request
             JSONObject killCivilianRequest = new JSONObject();
             killCivilianRequest.put("method", "vote_civilian");
-            killCivilianRequest.put("player_id", ui.killCivilianId());
+            killCivilianRequest.put("player_id", playerId);
 
-            Messenger.sendJSONObject(killCivilianRequest, datagramSocket, getSocketAddressFromPlayerId(playerId));
+            Messenger.sendJSONObject(killCivilianRequest, datagramSocket, getSocketAddressFromPlayerId(kpu_id));
         }
     }
 
