@@ -34,6 +34,7 @@ public class TCPRequestResponseChannel extends Thread{
     }
 
     public TCPRequestResponseChannel(InetAddress addressSana, int portSana) throws IOException {
+        System.out.println("Connecting to server...");
         this.socket = new Socket(addressSana, portSana);
         requestQueue = new LinkedBlockingQueue<JSONObject>();
         hasTakenARequestButNotYetResponded = false;

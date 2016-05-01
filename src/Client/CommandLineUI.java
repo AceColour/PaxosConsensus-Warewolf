@@ -44,7 +44,7 @@ public class CommandLineUI implements UI{
         System.out.print("port UDP: ");
 
         Scanner scanIn = new Scanner(System.in);
-        return Integer.getInteger(scanIn.nextLine());
+        return scanIn.nextInt();
     }
 
     @Override
