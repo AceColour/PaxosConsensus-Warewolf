@@ -6,7 +6,6 @@ import org.json.simple.JSONObject;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Random;
 
 /**
@@ -117,7 +116,7 @@ public class Game extends Thread{
         killPlayerRequestReceivedLock.notify();
     }
 
-    public void waitkillPlayerRequestReceived(){
+    public void waitkillRequestReceived(){
         try {
             killPlayerRequestReceivedLock.wait();
         } catch (InterruptedException e) {
@@ -338,14 +337,87 @@ public class Game extends Thread{
     public void run(){
         waitNumPlayersReady();
         startGame();
-        waitKPUId();
-        voteNow();
-        waitkillPlayerRequestReceived();
-        if (!adaPlayerDibunuh){
-            voteNow();
-            waitkillPlayerRequestReceived();
+        while (!isGameOver()){
+            if (dayStatus){
+                adaPlayerDibunuh = false;
+                waitKPUId();
+                voteNow();
+                waitkillRequestReceived();
+                if (!adaPlayerDibunuh){
+                    voteNow();
+                    waitkillRequestReceived();
+                }
+            }else{
+                adaPlayerDibunuh = false;
+                do{
+                    voteNow();
+                    waitkillRequestReceived();
+                }while (!adaPlayerDibunuh);
+            }
+            if (!isGameOver()){
+                changePhase();
+            }
         }
+        broadcastGameOver();
 
+    }
+
+    private void changePhase() {
+        dayStatus = !dayStatus;
+        if (dayStatus)
+            dayCount++;
+
+        broadcastChangePhase();
+
+    }
+
+    private void broadcastGameOver(){
+        JSONObject request = new JSONObject();
+        request.put("method","game_over");
+        if (getPlayerWerewolfActiveList().size()==0)
+            request.put("winner","werewolf");
+        else
+            request.put("winner","player");
+
+        for (Object playerObject : playerConnected){
+            Player player = (Player) playerObject;
+
+            try {
+                JSONObject response = player.getCommunicator().sendRequestAndGetResponse(request);
+                System.out.println("send game_over to player " + player.getPlayerId() + " . response: ");
+                System.out.println(response);
+            } catch (IOException e) {
+                e.printStackTrace();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private void broadcastChangePhase() {
+        JSONObject request = new JSONObject();
+        request.put("method","change_phase");
+        request.put("phase",dayStatus?"day":"night");
+        request.put("days",dayCount);
+
+        for (Object playerObject : playerConnected){
+            Player player = (Player) playerObject;
+
+            try {
+                JSONObject response = player.getCommunicator().sendRequestAndGetResponse(request);
+                System.out.println("send vote_now to player " + player.getPlayerId() + " . response: ");
+                System.out.println(response);
+            } catch (IOException e) {
+                e.printStackTrace();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private boolean isGameOver() {
+        return getPlayerWerewolfActiveList().size()>=getPlayerCitizenActiveList().size()
+                || getPlayerWerewolfActiveList().size()<=0;
     }
 
     private void voteNow() {
