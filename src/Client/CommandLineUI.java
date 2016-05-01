@@ -56,6 +56,27 @@ public class CommandLineUI implements UI{
         return scanIn.nextInt();
     }
 
+    // Voting handler
+    @Override
+    public int killWerewolfId(){
+        System.out.println("=======         WEREWOLF       ======");
+        System.out.println("=====Vote Player Id  to be killed====");
+        System.out.print("Player Id=: ");
+
+        Scanner scanIn = new Scanner(System.in);
+        return scanIn.nextInt();
+    }
+
+    @Override
+    public int killCivilianId(){
+        System.out.println("=======         CIVILIAN       ======");
+        System.out.println("=====Vote Player Id suspected as Werewolf to be killed====");
+        System.out.print("Player Id=: ");
+
+        Scanner scanIn = new Scanner(System.in);
+        return scanIn.nextInt();
+    }
+
     @Override
     public void displaySuccessfulResponse(String header){
         System.out.println("=====" + header + " Result=====");
@@ -74,5 +95,55 @@ public class CommandLineUI implements UI{
         System.out.println("=====" + header + " Result=====");
         System.out.println("status: failed");
         System.out.println("cause: " + cause);
+    }
+
+    @Override
+    public void displayGameOver(String winner) {
+        System.out.println("==============================");
+        System.out.println("---------- GAME OVER ---------");
+        System.out.println("winner: " + winner);
+    }
+
+    @Override
+    public void displayErrorConnecting(InetSocketAddress inetSocketAddress) {
+        System.out.println("Error connecting to " + inetSocketAddress);
+    }
+
+    @Override
+    public void displayGameStart(Object time, Object role, Object friend) {
+        System.out.println("======================");
+        System.out.println("---- GAME START! -----");
+        if (time!=null)
+            System.out.println("time: " + time);
+        if (role!=null)
+            System.out.println("role: " + role);
+        if (friend != null)
+            System.out.println("Friends: " + friend);
+    }
+
+    @Override
+    public int askReadyOrLeave() {
+        System.out.println("1: ready");
+        System.out.println("0: leave");
+        System.out.print("command: ");
+
+        Scanner sc = new Scanner(System.in);
+
+        while(true){
+            String s = sc.nextLine();
+            if (s.equals("0")){
+                return 0;
+            }else if (s.equals("1")){
+                return 1;
+            }
+        }
+    }
+
+    @Override
+    public Boolean askLeaveWhileWaiting() {
+        System.out.println("waiting... type LEAVE followed by enter newline to leave the game");
+        Scanner scanIn = new Scanner(System.in);
+        String result = scanIn.nextLine();
+        return result.equals("leave");
     }
 }

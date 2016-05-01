@@ -3,6 +3,7 @@ package Client;
 
 import Client.Communications.TCPRequestResponseChannel;
 import Client.Misc.ClientInfo;
+import Client.Paxos.Messenger;
 import Client.Paxos.PaxosController;
 import jdk.nashorn.internal.parser.JSONParser;
 import org.json.simple.JSONArray;
@@ -39,6 +40,8 @@ public class Client {
 
     private int numPlayer;
 
+    DatagramSocket datagramSocket;
+
     // Paxos Controller
     PaxosController paxosController;
 
@@ -54,7 +57,7 @@ public class Client {
     public Client(){
         // Initialization
         ui = new CommandLineUI();
-        // playerInfo = new ClientInfo()
+        playerInfo = new ClientInfo(-1,-1,null,-1,null);
         isKPU = false;
         isDay = false;
         numPlayer = 0;
@@ -92,9 +95,10 @@ public class Client {
             if (status == null) {
                 ui.displayFailedResponse("Join", "connection failure: error response from server");
                 retryRequest = true;
-            } else if(status.equals("ok")){
+            } else if(status.equals("ok") && joinResponse.containsKey("player_id")){
                 ui.displaySuccessfulResponse("Join");
                 playerInfo.setPlayerId(Integer.parseInt(joinResponse.get("player_id").toString()));
+                retryRequest = false;
             } else if(status.equals("fail")) {
                 ui.displayFailedResponse("Join", "connection failure: error response from server");
                 retryRequest = true;
@@ -140,6 +144,7 @@ public class Client {
     public void run() throws IOException, InterruptedException {
         // Get UDP Port
         int port =  ui.askPortUDP();
+
         try {
             UDPAddress = new InetSocketAddress(
                     getLocalHost().getHostAddress(),
@@ -148,6 +153,9 @@ public class Client {
         } catch (UnknownHostException e) {
             e.printStackTrace();
         }
+
+        // Initialization socket value
+        datagramSocket = new DatagramSocket(UDPAddress.getPort());
 
         // Debug
         System.out.println(getLocalHost().getHostAddress() + ":" + port) ;
@@ -161,19 +169,76 @@ public class Client {
                     serverAddress.getAddress(),
                     serverAddress.getPort()
             );
+            communicator.start();
         } catch (IOException e) {
-            e.printStackTrace();
+            ui.displayErrorConnecting(serverAddress);
+            java.lang.System.exit(1);
         }
 
         // Join to server
         join();
 
-        // Send ready up request
-        readyUp();
+        //ready or leave
+        if (ui.askReadyOrLeave()==1){
+
+            // Send ready up request
+            readyUp();
+
+        }else{
+
+            // Send leave request
+            leave();
+        }
+
+        waitForStart();
 
         if(isReady && isStart) {
             play();
         }
+    }
+
+    public void waitForStart() {
+        Boolean isLeave;
+        isLeave = ui.askLeaveWhileWaiting();
+
+        isStart = false;
+        do{
+            try {
+                JSONObject jsonObject = communicator.getLastRequestDariSeberangSana();
+
+                JSONObject response = new JSONObject();
+
+                if (jsonObject.get("method").equals("start")){
+                    response.put("status", "ok");
+
+                    Object time = null;
+                    Object role = null;
+                    Object friend = null;
+
+                    if (jsonObject.containsKey("time")) time = jsonObject.get("time");
+                    if (jsonObject.containsKey("role")) {
+                        role = jsonObject.get("role");
+                        playerInfo.setRole(role.toString());
+                    }else{
+                        playerInfo.setRole("civilian");
+                    }
+                    if (jsonObject.containsKey("friend")) friend= jsonObject.get("friend");
+
+                    ui.displayGameStart(time, role, friend);
+
+                    isStart = true;
+                }else{
+                    response.put("status", "fail");
+                    response.put("description", "client cannot conform");
+                }
+
+                communicator.sendResponseKeSeberangSana(response);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }while (!isStart);
     }
 
     public void leave() {
@@ -205,6 +270,7 @@ public class Client {
             } else if(status.equals("ok")){
                 ui.displaySuccessfulResponse("Leave");
                 playerInfo.setIsAlive(0);
+                System.exit(0);
             } else if(status.equals("fail")) {
                 ui.displayFailedResponse("Leave", "connection failure: error response from server");
                 retryRequest = true;
@@ -247,6 +313,7 @@ public class Client {
             } else if(status.equals("ok")){
                 ui.displaySuccessfulResponse("Retrieve List Client");
                 isReady = true;
+                retryRequest = false;
             } else if(status.equals("fail")) {
                 ui.displayFailedResponse("Retrieve List Client", "connection failure: error response from server");
                 retryRequest = true;
@@ -260,14 +327,8 @@ public class Client {
         }while (retryRequest); // while there is error or failed response, try send request again
     }
 
-    public void changePhase() {
+    public void changePhase(JSONObject recv) {
         // listening to the port
-        JSONObject recv = null;
-        try {
-            recv = communicator.getLastRequestDariSeberangSana();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
         if(recv.get("method").equals("change_phase")) {
             isDay = recv.get("time").equals("day");
             daysCount = Integer.parseInt(recv.get("days").toString());
@@ -350,63 +411,41 @@ public class Client {
         }while (retryRequest); // while there is error or failed response, try send request again
     }
 
+    boolean gameOver;
+
+    int kpu_id;
+
+
     //TODO refactor ini
     public void play() throws IOException, InterruptedException {
-        DatagramSocket datagramSocket = new DatagramSocket(UDPAddress.getPort());
-        boolean gameOver = false;
+        gameOver = false;
 
-        int kpu_id;
 
         do{
+
+           JSONObject serverCommand = communicator.getLastRequestDariSeberangSana();
             //change phase
-           changePhase();
+           if (serverCommand.get("method").equals("change_phase")){
+               changePhase(serverCommand);
 
-            if (isDay) {
-                //TODO show civilian killed if day and not gameover
-                //TODO show werewolf/civilian killed if night and not gameover
+                if (isDay) {
+                    //TODO show civilian killed if day and not gameover
+                    //TODO show werewolf/civilian killed if night and not gameover
 
-                //run paxos if day and not gameover
-                paxosController = new PaxosController(listPlayer, playerInfo.getPlayerId(), datagramSocket);
-                paxosController.start();
+                    doPaxos();
+                }
+           }else if (serverCommand.get("method").equals("vote_now")){
+               JSONObject response = new JSONObject();
+               response.put("status","ok");
 
-                //tunggu perintah vote dari server
-                //periksa lagi apakah perintah vote itu sebelum atau sesudah paxos
-                boolean gotVoteCommand = false;
-                do {
-                    JSONObject message = communicator.getLastRequestDariSeberangSana();
-                    if (isMethodGameOver(message)) {
-                        gameOver = true;
-                        JSONObject response = new JSONObject();
-                        response.put("status", "ok");
-                        communicator.sendResponseKeSeberangSana(response);
-                    } else if (message.get("method").equals("vote_now")) {
-
-                        isDay = message.get("phase").equals("day");
-                        JSONObject response = new JSONObject();
-                        response.put("status", "ok");
-                        communicator.sendResponseKeSeberangSana(response);
-                    } else {
-                        JSONObject response = new JSONObject();
-                        response.put("status", "fail");
-                        response.put("description", "client cannot conform");
-                        communicator.sendResponseKeSeberangSana(response);
-                    }
-                } while (!gotVoteCommand);
-
-                paxosController.stopPaxos();
-            }
+               System.out.println("VOTING NOT IMPLEMENTED");
             //TODO run voting process
-            if (!isDay && playerInfo.getRole().equals("werewolf")){
-                //TODO vote as werewolf
-            }else{
-                //TODO vote sisanya
-            }
+           }else if (serverCommand.get("method").equals("game_over")){
+                gameOver(serverCommand);
+           }
+
         }while (!gameOver);
 
-    }
-
-    private boolean isMethodGameOver(JSONObject message){
-        return message.get("method").equals("game_over");
     }
 
     public int countActivePlayers() {
@@ -419,8 +458,107 @@ public class Client {
     }
 
     /* DOING PAXOS */
-    public void doPaxos(){
+    public void doPaxos() throws SocketException {
+        //run paxos if day and not gameover
+        paxosController = new PaxosController(listPlayer, playerInfo.getPlayerId(), datagramSocket);
+        paxosController.start();
 
+        //tunggu perintah vote dari server
+        //periksa lagi apakah perintah vote itu sebelum atau sesudah paxos
+        boolean KPUSelected = false;
+        try {
+            do {
+                JSONObject message = null;
+                    message = communicator.getLastRequestDariSeberangSana();
+                if (message.get("method").equals("game_over")) {
+                    gameOver = true;
+                    JSONObject response = new JSONObject();
+                    response.put("status", "ok");
+                    communicator.sendResponseKeSeberangSana(response);
+                } else if (message.get("method").equals("kpu_selected")) {
+                    JSONObject response = new JSONObject();
+                    if (message.containsKey("kpu_id")){
+                        response.put("status", "ok");
+                        kpu_id = (Integer) message.get("kpu_id");
+                    }else{
+                        response.put("status", "error");
+                        response.put("description", "value not found");
+                    }
+                    communicator.sendResponseKeSeberangSana(response);
+                } else {
+                    JSONObject response = new JSONObject();
+                    response.put("status", "fail");
+                    response.put("description", "client cannot conform");
+                    communicator.sendResponseKeSeberangSana(response);
+                }
+            } while (!KPUSelected);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        paxosController.stopPaxos();
+    }
+
+    public void gameOver(JSONObject serverCommand){
+        if (serverCommand.containsKey("winner")){
+            JSONObject response = new JSONObject();
+            response.put("status", "ok");
+            try {
+                communicator.sendResponseKeSeberangSana(response);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+            ui.displayGameOver((String) serverCommand.get("winner"));
+            gameOver = true;
+
+        }else{
+            JSONObject response = new JSONObject();
+            response.put("status", "fail");
+            response.put("description","no winner?");
+            try {
+                communicator.sendResponseKeSeberangSana(response);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+    /* VOTING */
+
+    public void voteKillWerewolf(int playerId) {
+        if(playerInfo.getRole().equals("werewolf") && !isDay){
+            // Create JSON Object for killWerewolf request
+            JSONObject killWerewolfRequest = new JSONObject();
+            killWerewolfRequest.put("method", "vote_werewolf");
+            killWerewolfRequest.put("player_id", ui.killWerewolfId());
+
+            Messenger.sendJSONObject(killWerewolfRequest, datagramSocket, getSocketAddressFromPlayerId(playerId));
+        }
+    }
+
+    public void voteKillCivilian(int playerId) {
+        if(playerInfo.getRole().equals("civilian") && isDay){
+
+            // Create JSON Object for killWerewolf request
+            JSONObject killCivilianRequest = new JSONObject();
+            killCivilianRequest.put("method", "vote_civilian");
+            killCivilianRequest.put("player_id", ui.killCivilianId());
+
+            Messenger.sendJSONObject(killCivilianRequest, datagramSocket, getSocketAddressFromPlayerId(playerId));
+        }
+    }
+
+    public InetSocketAddress getSocketAddressFromPlayerId(int playerId) {
+        for (ClientInfo clientInfo: listPlayer){
+            if (clientInfo.getPlayerId() == playerId){
+                InetSocketAddress inetSocketAddress = new InetSocketAddress(
+                        clientInfo.getAddress(),
+                        clientInfo.getPort());
+            }
+        }
+        return null;
     }
 
     public static void main(String [] args) throws IOException, InterruptedException {

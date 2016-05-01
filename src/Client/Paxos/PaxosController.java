@@ -9,6 +9,7 @@ import org.json.simple.parser.ParseException;
 
 import java.io.IOException;
 import java.net.*;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -42,6 +43,7 @@ public class PaxosController extends Thread{
         //hitung dua client id terbesar
         idTerbesar = 0;
         idKeduaTerbesar = 0;
+        this.clientList = new ArrayList<ClientInfo>(clientList);
         for (ClientInfo clientInfo: clientList){
             if (clientInfo.getPlayerId()>idTerbesar)
                 idTerbesar = clientInfo.getPlayerId();

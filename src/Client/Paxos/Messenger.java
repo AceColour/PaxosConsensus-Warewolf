@@ -139,6 +139,21 @@ public class Messenger {
         unreliableSender.send(datagramPacket);
     }
 
+    public static void sendJSONObject(JSONObject jsonObject, DatagramSocket datagramSocket, InetSocketAddress inetSocketAddress) {
+        String jsonString = jsonObject.toJSONString();
+        byte[] data = jsonString.getBytes();
+        DatagramPacket datagramPacket = new DatagramPacket(data,data.length,inetSocketAddress.getAddress(),inetSocketAddress.getPort());
+
+        try {
+            UnreliableSender unreliableSender1 = new UnreliableSender(datagramSocket);
+            unreliableSender1.send(datagramPacket);
+        } catch (SocketException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     //untuk testing
     //prosedur: jalankan netcat -ul untuk port 4000-4005
     //periksa di semua

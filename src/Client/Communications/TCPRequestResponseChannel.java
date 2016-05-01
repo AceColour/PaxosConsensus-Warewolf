@@ -30,6 +30,7 @@ public class TCPRequestResponseChannel extends Thread{
     public TCPRequestResponseChannel(Socket socket){
         this.socket = socket;
         requestQueue = new LinkedBlockingQueue<JSONObject>();
+        responseQueue = new LinkedBlockingQueue<JSONObject>();
         hasTakenARequestButNotYetResponded = false;
     }
 
@@ -37,6 +38,7 @@ public class TCPRequestResponseChannel extends Thread{
         System.out.println("Connecting to server...");
         this.socket = new Socket(addressSana, portSana);
         requestQueue = new LinkedBlockingQueue<JSONObject>();
+        responseQueue = new LinkedBlockingQueue<JSONObject>();
         hasTakenARequestButNotYetResponded = false;
     }
 
@@ -104,9 +106,8 @@ public class TCPRequestResponseChannel extends Thread{
                     }
                     message = "";
                 } catch (ParseException e) {
-                    e.printStackTrace();
                 } catch (InterruptedException e) {
-                    e.printStackTrace();
+                } catch (ClassCastException e){
                 }
             }
         } catch (IOException e) {
