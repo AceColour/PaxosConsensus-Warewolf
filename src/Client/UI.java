@@ -14,5 +14,7 @@ public interface UI {
     void displaySuccessfulResponse(String header);
     void displayFailedResponse(String header, String cause);
     void displayErrorResponse(String header, String cause);
+
+    void displayGameOver(String winner);
 }
 

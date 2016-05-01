@@ -75,4 +75,11 @@ public class CommandLineUI implements UI{
         System.out.println("status: failed");
         System.out.println("cause: " + cause);
     }
+
+    @Override
+    public void displayGameOver(String winner) {
+        System.out.println("==============================");
+        System.out.println("---------- GAME OVER ---------");
+        System.out.println("winner: " + winner);
+    }
 }
