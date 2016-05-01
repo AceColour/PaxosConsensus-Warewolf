@@ -119,12 +119,13 @@ public class Server extends Thread {
                 }
                 // PROTOCOL NO. 3
                 else if (request.get("method").equals("leave")) {
-                    if (receiveLeaveGame(this.udpIpAddress, this.udpPortNumber) == 0) {
+                    int leaveResult = receiveLeaveGame(this.udpIpAddress, this.udpPortNumber);
+                    if (leaveResult == 0) {
                         JSONObject response = new JSONObject();
                         response.put("status", "ok");
                         communicator.sendResponseKeSeberangSana(response);
                     }
-                    else if (receiveLeaveGame(this.udpIpAddress, this.udpPortNumber) == 1) {
+                    else if (leaveResult == 1) {
                         JSONObject response = new JSONObject();
                         response.put("status", "fail");
                         response.put("description", "The game has started. You are not allowed to leave.");
