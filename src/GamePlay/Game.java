@@ -16,6 +16,7 @@ public class Game {
     private HashSet playerReady = new HashSet();
     private HashSet playerLeft = new HashSet();
     boolean startedStatus = false;
+    boolean dayStatus = false; // True: Day; False: Night.
 
     // Methods
     // Getter
@@ -33,6 +34,10 @@ public class Game {
 
     public boolean getStartedStatus() {
         return startedStatus;
+    }
+
+    public boolean getDayStatus() {
+        return dayStatus;
     }
 
     // Other methods
@@ -98,8 +103,16 @@ public class Game {
         this.playerConnected.add(_player);
     }
 
-    public void clientReady(Player _player) {
-        this.playerReady.add(_player);
+    public void clientReady(String _ipAddr, int _portNo) {
+        Iterator<Player> iteratorPlayerConnected = playerConnected.iterator();
+        Player currentPlayerConnectedIterator;
+        boolean foundPlayerConnected = false;
+        while (foundPlayerConnected && iteratorPlayerConnected.hasNext()) {
+            currentPlayerConnectedIterator = iteratorPlayerConnected.next();
+            if (currentPlayerConnectedIterator.getIpAddress().equals(_ipAddr) && currentPlayerConnectedIterator.getPortNumber() == _portNo) {
+                this.playerReady.add(new Player(currentPlayerConnectedIterator.getIpAddress(), currentPlayerConnectedIterator.getPortNumber(), currentPlayerConnectedIterator.getPlayerId(), currentPlayerConnectedIterator.getUsername(), true));
+            }
+        }
     }
 
     public int clientLeave(String _ipAddr, int _portNo) {
@@ -145,5 +158,10 @@ public class Game {
         }
 
         return found;
+    }
+
+    public boolean changeDay() {
+        this.dayStatus = !this.dayStatus;
+        return dayStatus;
     }
 }
