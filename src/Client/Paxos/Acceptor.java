@@ -63,7 +63,11 @@ public class Acceptor {
             prevAcceptedValue = acceptedValue;
             acceptedValue = value;
 
-            messenger.sendAccepted(acceptedId, acceptedValue);
+            try {
+                messenger.sendAccepted(acceptedId, acceptedValue);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         }
     }
 }

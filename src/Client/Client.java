@@ -10,10 +10,7 @@ import org.json.simple.JSONObject;
 import org.json.simple.parser.ParseException;
 
 import java.io.IOException;
-import java.net.DatagramSocket;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.UnknownHostException;
+import java.net.*;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -79,7 +76,12 @@ public class Client {
 
         do {
             // Get JSON Object as join response from server
-            JSONObject joinResponse = new JSONObject(communicator.sendRequestAndGetResponse(joinRequest));
+            JSONObject joinResponse = null;
+            try {
+                joinResponse = new JSONObject(communicator.sendRequestAndGetResponse(joinRequest));
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
 
             // Get status from response
             String status = joinResponse.get("status").toString();
@@ -106,7 +108,12 @@ public class Client {
 
     public void start() {
         // listening to the port
-        JSONObject recv = communicator.getLastRequestDariSeberangSana();
+        JSONObject recv = null;
+        try {
+            recv = communicator.getLastRequestDariSeberangSana();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
         if(recv.get("method").equals("start")) {
             isDay = recv.get("time").equals("day");
             playerInfo.setRole(recv.get("role").toString());
@@ -117,7 +124,11 @@ public class Client {
             // Send back response to server
             JSONObject response = new JSONObject();
             response.put("status", "ok");
-            communicator.sendResponseKeSeberangSana(response);
+            try {
+                communicator.sendResponseKeSeberangSana(response);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
 
         }
         daysCount++;
@@ -161,7 +172,14 @@ public class Client {
 
         do {
             // Get JSON Object as join response from server
-            JSONObject leaveResponse = new JSONObject(communicator.sendRequestAndGetResponse(leaveRequest));
+            JSONObject leaveResponse = null;
+            try {
+                leaveResponse = new JSONObject(communicator.sendRequestAndGetResponse(leaveRequest));
+            } catch (IOException e) {
+                e.printStackTrace();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
 
             // Get status from response
             String status = leaveResponse.get("status").toString();
@@ -196,7 +214,14 @@ public class Client {
 
         do {
             // Get JSON Object as join response from server
-            JSONObject readyUpResponse = new JSONObject(communicator.sendRequestAndGetResponse(readyUpRequest));
+            JSONObject readyUpResponse = null;
+            try {
+                readyUpResponse = new JSONObject(communicator.sendRequestAndGetResponse(readyUpRequest));
+            } catch (IOException e) {
+                e.printStackTrace();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
 
             // Get status from response
             String status = readyUpResponse.get("status").toString();
@@ -232,7 +257,14 @@ public class Client {
 
         do {
             // Get JSON Object as join response from server
-            JSONObject listClientResponse = new JSONObject(communicator.sendRequestAndGetResponse(listClientRequest));
+            JSONObject listClientResponse = null;
+            try {
+                listClientResponse = new JSONObject(communicator.sendRequestAndGetResponse(listClientRequest));
+            } catch (IOException e) {
+                e.printStackTrace();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
 
             // Get status from response
             String status = listClientResponse.get("status").toString();
@@ -278,7 +310,7 @@ public class Client {
     }
 
     //TODO refactor ini
-    public void play(){
+    public void play() throws IOException, InterruptedException {
         DatagramSocket datagramSocket = new DatagramSocket(UDPAddress.getPort());
         boolean gameOver = false;
 
@@ -296,7 +328,7 @@ public class Client {
                     communicator.sendResponseKeSeberangSana(response);
                 }else if (message.get("method").equals("change_phase")){
                     isDay=message.get("phase").equals("day");
-                    daysCount= (int) message.get("days");
+                    daysCount= Integer.parseInt(message.get("days").toString());
                     JSONObject response = new JSONObject();
                     response.put("status", "ok");
                     communicator.sendResponseKeSeberangSana(response);
@@ -308,12 +340,12 @@ public class Client {
                 }
             }while (!gotChangePhase);
 
-            if (isDay){
+            if (isDay) {
                 //TODO show civilian killed if day and not gameover
                 //TODO show werewolf/civilian killed if night and not gameover
 
                 //run paxos if day and not gameover
-                paxosController = new PaxosController(listPlayer,playerInfo.getPlayerId(),datagramSocket);
+                paxosController = new PaxosController(listPlayer, playerInfo.getPlayerId(), datagramSocket);
                 paxosController.start();
 
                 //tunggu perintah vote dari server
@@ -321,59 +353,57 @@ public class Client {
                 boolean gotVoteCommand = false;
                 do {
                     JSONObject message = communicator.getLastRequestDariSeberangSana();
-                    if (isMethodGameOver(message)){
+                    if (isMethodGameOver(message)) {
                         gameOver = true;
                         JSONObject response = new JSONObject();
                         response.put("status", "ok");
                         communicator.sendResponseKeSeberangSana(response);
-                    }else if (message.get("method").equals("vote_now")){
-                        isDay=message.get("phase").equals("day");
+                    } else if (message.get("method").equals("vote_now")) {
+                        isDay = message.get("phase").equals("day");
                         JSONObject response = new JSONObject();
                         response.put("status", "ok");
                         communicator.sendResponseKeSeberangSana(response);
-                    }else{
+                    } else {
                         JSONObject response = new JSONObject();
                         response.put("status", "fail");
                         response.put("description", "client cannot conform");
                         communicator.sendResponseKeSeberangSana(response);
                     }
-                }while (!gotVoteCommand);
+                } while (!gotVoteCommand);
 
                 paxosController.stopPaxos();
 
 
-                if (isDay){
+                if (isDay) {
                     //TODO show civilian killed if day and not gameover
                     //TODO show werewolf/civilian killed if night and not gameover
 
                     //run paxos if day and not gameover
-                    paxosController = new PaxosController(listPlayer,playerInfo.getPlayerId(),datagramSocket);
+                    paxosController = new PaxosController(listPlayer, playerInfo.getPlayerId(), datagramSocket);
                     paxosController.start();
 
                     //tunggu perintah vote dari server
                     //periksa lagi apakah perintah vote itu sebelum atau sesudah paxos
-                    boolean gotVoteCommand = false;
+                    gotVoteCommand = false;
                     do {
                         JSONObject message = communicator.getLastRequestDariSeberangSana();
-                        if (isMethodGameOver(message)){
+                        JSONObject response = new JSONObject();
+                        if (isMethodGameOver(message)) {
                             gameOver = true;
-                            JSONObject response = new JSONObject();
                             response.put("status", "ok");
                             communicator.sendResponseKeSeberangSana(response);
-                        }else if (message.get("method").equals("kpu_selected")){
-                            kpu_id = (int) message.get("kpu_id");
-                            JSONObject response = new JSONObject();
+                        } else if (message.get("method").equals("kpu_selected")) {
+                            kpu_id = Integer.parseInt(message.get("kpu_id").toString());
                             response.put("status", "ok");
                             communicator.sendResponseKeSeberangSana(response);
-                        }else{
-                            JSONObject response = new JSONObject();
+                        } else {
                             response.put("status", "fail");
                             response.put("description", "client cannot conform");
                             communicator.sendResponseKeSeberangSana(response);
                         }
-                    }while (!gotVoteCommand);
+                    } while (!gotVoteCommand);
+                }
             }
-
             //TODO run voting process
             if (!isDay && playerInfo.getRole().equals("werewolf")){
                 //TODO vote as werewolf
@@ -381,7 +411,6 @@ public class Client {
                 //TODO vote sisanya
             }
         }while (!gameOver);
-
 
     }
 
