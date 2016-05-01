@@ -29,8 +29,8 @@ public class Server {
         }
     }
 
-    public void receiveReady() {
-
+    public void receiveReady(String _ipAddr, int _portNo) {
+        game.clientReady(_ipAddr, _portNo);
     }
 
     public int receiveLeaveGame(String _ipAddr, int _portNo) {
