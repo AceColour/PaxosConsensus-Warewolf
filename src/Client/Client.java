@@ -390,6 +390,8 @@ public class Client {
                     ));
                 }
 
+                ui.displayListClient(listPlayer);
+
             } else if(status.equals("fail")) {
                 ui.displayFailedResponse("Retrieve List Client", "connection failure: error response from server");
                 retryRequest = true;

@@ -1,6 +1,9 @@
 package Client;
 
+import Client.Misc.ClientInfo;
+
 import java.net.InetSocketAddress;
+import java.util.List;
 import java.util.Scanner;
 
 /**
@@ -81,6 +84,18 @@ public class CommandLineUI implements UI{
         System.out.println("==============================");
         System.out.println("---------- GAME OVER ---------");
         System.out.println("winner: " + winner);
+    }
+
+    @Override
+    public void displayListClient(List<ClientInfo> clientInfoList) {
+        System.out.println("==============================");
+        System.out.println("---------- Players -----------");
+        System.out.println("id\talive\tname");
+        for (ClientInfo clientInfo : clientInfoList){
+            System.out.print(""+clientInfo.getPlayerId() + "\t" + clientInfo.getIsAlive() + "\t" + clientInfo.getUsername());
+            if (clientInfo.getRole()!=null)
+                System.out.println("\t" + clientInfo.getRole() );
+        }
     }
 
     @Override
