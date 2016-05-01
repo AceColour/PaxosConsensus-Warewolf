@@ -14,18 +14,23 @@ import java.net.Socket;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 
 /**
  * Created by erickchandra on 4/25/16.
  */
 public class Server extends Thread {
-    public static int currentLastPlayerId = -1;
+    private static int currentLastPlayerId = -1;
     private static Game game = new Game();
     private static ServerSocket serverSocket;
     private final Socket clientSocket;
     private String udpIpAddress;
     private int udpPortNumber;
     private int playerId;
+    private static JSONArray kpuProposalJSON = null;
+    private static int voteDayNotDecidedCount;
+
+    private static List<Server> serverList;
 
     private boolean leaveStatus = false;
 
@@ -73,6 +78,7 @@ public class Server extends Thread {
             JSONObject jsonObjectReceived = listen(clientSocket);
             System.out.println(jsonObjectReceived.toString());
 
+            // [OK] PROTOCOL NO. 1
             if (jsonObjectReceived.get("method").equals("join")) {
                 this.udpIpAddress = jsonObjectReceived.get("udp_address").toString();
                 this.udpPortNumber = Integer.parseInt(jsonObjectReceived.get("udp_port").toString());
@@ -82,9 +88,34 @@ public class Server extends Thread {
                 jsonObjectSend.put("player_id", this.playerId);
                 send(clientSocket, jsonObjectSend.toString());
             }
+            // PROTOCOL NO. 2 (+ PROTOCOL NO. 12 INCLUSIVE: START GAME) TODO: START GAME
             else if (jsonObjectReceived.get("method").equals("ready")) {
                 receiveReady(this.udpIpAddress, this.udpPortNumber);
+                JSONObject jsonObject = new JSONObject();
+                jsonObject.put("status", "ok");
+                jsonObject.put("description", "waiting for other player to start");
+                send(clientSocket, jsonObject.toString());
+                if (game.getPlayerReady().size() == game.getPlayerConnected().size() && game.getPlayerReady().size() >= 6) {
+                    game.startGame();
+                    jsonObject = new JSONObject();
+                    jsonObject.put("status", "ok");
+                    jsonObject.put("description", "waiting for other player to start");
+                    sendBroadcast(jsonObject.toString());
+                }
             }
+            // PROTOCOL NO. 3
+            else if (jsonObjectReceived.get("method").equals("leave")) {
+                if (receiveLeaveGame(this.udpIpAddress, this.udpPortNumber) == 0) {
+                    JSONObject jsonObjectSend = new JSONObject();
+                    jsonObjectSend.put("status", "ok");
+                }
+                else if (receiveLeaveGame(this.udpIpAddress, this.udpPortNumber) == 1) {
+                    JSONObject jsonObjectSend = new JSONObject();
+                    jsonObjectSend.put("status", "fail");
+                    jsonObjectSend.put("description", "The game has started. You are not allowed to leave.");
+                }
+            }
+            // PROTOCOL NO. 4 TODO: Insert Werewolf information ONLY FOR DEAD PLAYERS
             else if (jsonObjectReceived.get("method").equals("client_address")) {
                 JSONObject playerConnectedJSONObject = new JSONObject();
                 playerConnectedJSONObject.put("status", "ok");
@@ -111,8 +142,97 @@ public class Server extends Thread {
                 System.out.println(playerConnectedJSONObject.toString());
                 send(clientSocket, playerConnectedJSONObject.toString());
             }
+            // [OK] PROTOCOL NO. 7: CLIENT ACCEPTED PROPOSAL (FOR KPU_ID) (+PROTOCOL NO. 12: KPU SELECTED)
+            else if (jsonObjectReceived.get("method").equals("accepted_proposal")) {
+                if (kpuProposalJSON == null) {
+                    JSONObject jsonObject = new JSONObject();
+                    jsonObject.put("kpu_id", jsonObjectReceived.get("kpu_id"));
+                    jsonObject.put("count", 1);
+                    kpuProposalJSON.add(jsonObject);
+                }
+                else {
+                    // Iterate through JSON Array
+                    Iterator iterator = kpuProposalJSON.iterator();
+                    boolean found = false;
+                    while (!found && iterator.hasNext()) {
+                        JSONObject jsonObjectIterate = (JSONObject) iterator.next();
+                        if (jsonObjectIterate.get(jsonObjectReceived.get("kpu_id")) != null) {
+                            jsonObjectIterate.put("count", (Integer) jsonObjectIterate.get("count") + 1);
+                            found = true;
+                        }
+                    }
+
+                    // KPU ID not found
+                    if (!found) {
+                        JSONObject jsonObjectIterate = new JSONObject();
+                        jsonObjectIterate.put("kpu_id", jsonObjectReceived.get("kpu_id"));
+                        jsonObjectIterate.put("count", 1);
+                        kpuProposalJSON.add(jsonObjectIterate);
+                    }
+                }
+
+                // Iterate through kpuProposal JSON and Check condition if the KPU ID has reached quorum majority
+                Iterator iterator = kpuProposalJSON.iterator();
+                boolean found = false;
+                while (!found && iterator.hasNext()) {
+                    JSONObject jsonObjectIterate = (JSONObject) iterator.next();
+                    if ((Integer) jsonObjectIterate.get("count") > (Integer) (game.getPlayerConnected().size() / 2) + 1) {
+                        // Quorum reached, send KPU SELECTED
+                        JSONObject jsonObjectSend = new JSONObject();
+                        jsonObjectSend.put("method", "kpu_selected");
+                        jsonObjectSend.put("kpu_id", jsonObjectIterate.get("kpu_id"));
+                        sendBroadcast(jsonObjectSend.toString());
+                        found = true;
+                    }
+                }
+
+                
+            }
+            // PROTOCOL NO. 9: INFO WEREWOLF KILLED (PROTOCOL NO. 13 INCLUSIVE: Change phase)
+            else if (jsonObjectReceived.get("method").equals("vote_result_werewolf")) {
+                game.killPlayer((Integer) jsonObjectReceived.get("player_killed"));
+                JSONObject jsonObject = new JSONObject();
+                jsonObject.put("status", "ok");
+                jsonObject.put("description", "player killed");
+
+                // Change phase
+                game.changeDay();
+                jsonObject = new JSONObject();
+                jsonObject.put("method", "change_phase");
+                jsonObject.put("time", game.getDayStatus() ? "day" : "night");
+                jsonObject.put("description", "");
+            }
+            // PROTOCOL NO. 11: INFO CIVILIAN KILLED (PROTOCOL NO. 13 INCLUSIVE: Change phase)
+            else if (jsonObjectReceived.get("method").equals("vote_result_civilian")) {
+                game.killPlayer((Integer) jsonObjectReceived.get("player_killed"));
+                JSONObject jsonObject = new JSONObject();
+                jsonObject.put("status", "ok");
+                jsonObject.put("description", "player killed");
+
+                // Change phase
+                game.changeDay();
+                jsonObject = new JSONObject();
+                jsonObject.put("method", "change_phase");
+                jsonObject.put("time", game.getDayStatus() ? "day" : "night");
+                jsonObject.put("description", "");
+            }
+            else if (jsonObjectReceived.get("method").equals("vote_result")) { // Cannot decide
+                if (game.getDayStatus() == false) { // Werewolf must vote again and again
+                    JSONObject jsonObject = new JSONObject();
+                    jsonObject.put("method", "vote_now");
+                    jsonObject.put("phase", "night");
+                    sendBroadcast()
+                }
+                else { // In the day time, civilian is only restricted to vote only max 2 times. Otherwise, change day
+
+                }
+            }
+            // EXCEPTIONAL UNKNOWN PROTOCOL
             else {
                 // Command not found. Wrong JSON request.
+                JSONObject jsonObjectSend = new JSONObject();
+                jsonObjectSend.put("status", "error");
+                jsonObjectSend.put("description", "wrong request");
             }
         } while (!leaveStatus);
     }
@@ -170,6 +290,25 @@ public class Server extends Thread {
         return true;
     }
 
+    public static boolean sendBroadcast(String sendStr) {
+        for (Server server : serverList) {
+            try {
+                OutputStream os = server.clientSocket.getOutputStream();
+                OutputStreamWriter osw = new OutputStreamWriter(os);
+                BufferedWriter bw = new BufferedWriter(osw);
+                bw.write(sendStr);
+                bw.flush();
+                System.out.println("Server sent: " + sendStr + " to " + server.clientSocket);
+            } catch (IOException e) {
+                e.printStackTrace();
+                System.out.println("Client " + server.clientSocket + " has disconnected.");
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     public static void main(String[] args) {
         try {
             serverSocket = new ServerSocket(8088);
@@ -184,7 +323,7 @@ public class Server extends Thread {
             try {
                 socket = serverSocket.accept();
                 System.out.println("ACCEPTED NEW CONNECTION from " + socket);
-                new Server(socket);
+                serverList.add(new Server(socket));
             } catch (IOException e) {
                 e.printStackTrace();
             }
