@@ -16,5 +16,12 @@ public interface UI {
     void displayErrorResponse(String header, String cause);
 
     void displayGameOver(String winner);
+
+    void displayErrorConnecting(InetSocketAddress inetSocketAddress);
+
+    /**
+     * mengembalikan 0 bila leave, 1 bila ready
+     * */
+    int askReadyOrLeave();
 }
 

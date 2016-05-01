@@ -164,14 +164,24 @@ public class Client {
             );
             communicator.start();
         } catch (IOException e) {
-            e.printStackTrace();
+            ui.displayErrorConnecting(serverAddress);
+            java.lang.System.exit(1);
         }
 
         // Join to server
         join();
 
-        // Send ready up request
-        readyUp();
+        //ready or leave
+        if (ui.askReadyOrLeave()==1){
+
+            // Send ready up request
+            readyUp();
+
+        }else{
+
+            // Send leave request
+            leave();
+        }
 
         if(isReady && isStart) {
             play();

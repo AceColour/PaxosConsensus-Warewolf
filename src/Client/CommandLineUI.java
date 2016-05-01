@@ -82,4 +82,27 @@ public class CommandLineUI implements UI{
         System.out.println("---------- GAME OVER ---------");
         System.out.println("winner: " + winner);
     }
+
+    @Override
+    public void displayErrorConnecting(InetSocketAddress inetSocketAddress) {
+        System.out.println("Error connecting to " + inetSocketAddress);
+    }
+
+    @Override
+    public int askReadyOrLeave() {
+        System.out.println("1: ready");
+        System.out.println("0: leave");
+        System.out.print("command: ");
+
+        Scanner sc = new Scanner(System.in);
+
+        while(true){
+            String s = sc.nextLine();
+            if (s.equals("0")){
+                return 0;
+            }else if (s.equals("1")){
+                return 1;
+            }
+        }
+    }
 }
