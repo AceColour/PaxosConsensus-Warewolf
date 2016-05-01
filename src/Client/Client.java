@@ -497,7 +497,7 @@ public class Client {
             }
         }
 
-        //TODO send votes
+        sendVote();
 
         if (isKPU){
             assert voteListener != null;
