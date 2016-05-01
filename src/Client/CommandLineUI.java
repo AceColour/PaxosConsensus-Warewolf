@@ -89,6 +89,18 @@ public class CommandLineUI implements UI{
     }
 
     @Override
+    public void displayGameStart(Object time, Object role, Object friend) {
+        System.out.println("======================");
+        System.out.println("---- GAME START! -----");
+        if (time!=null)
+            System.out.println("time: " + time);
+        if (role!=null)
+            System.out.println("role: " + role);
+        if (friend != null)
+            System.out.println("Friends: " + friend);
+    }
+
+    @Override
     public int askReadyOrLeave() {
         System.out.println("1: ready");
         System.out.println("0: leave");
@@ -104,5 +116,11 @@ public class CommandLineUI implements UI{
                 return 1;
             }
         }
+    }
+
+    @Override
+    public void askLeaveWhileWaiting() {
+        System.out.println("waiting... type LEAVE followed by enter newline to leave the game");
+        System.out.println("LEAVE NOT IMPLEMENTED. sorry");
     }
 }

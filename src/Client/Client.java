@@ -92,7 +92,7 @@ public class Client {
             if (status == null) {
                 ui.displayFailedResponse("Join", "connection failure: error response from server");
                 retryRequest = true;
-            } else if(status.equals("ok")){
+            } else if(status.equals("ok") && joinResponse.containsKey("player_id")){
                 ui.displaySuccessfulResponse("Join");
                 playerInfo.setPlayerId(Integer.parseInt(joinResponse.get("player_id").toString()));
                 retryRequest = false;
@@ -183,9 +183,54 @@ public class Client {
             leave();
         }
 
+        waitForStart();
+
         if(isReady && isStart) {
             play();
         }
+    }
+
+    public void waitForStart() {
+        ui.askLeaveWhileWaiting(); //TODO ini belum diimplementasi. nanti tolong diimplementasi
+
+        isStart = false;
+        do{
+            try {
+                JSONObject jsonObject = communicator.getLastRequestDariSeberangSana();
+
+                JSONObject response = new JSONObject();
+
+                if (jsonObject.get("method").equals("start")){
+                    response.put("status", "ok");
+
+                    Object time = null;
+                    Object role = null;
+                    Object friend = null;
+
+                    if (jsonObject.containsKey("time")) time = jsonObject.get("time");
+                    if (jsonObject.containsKey("role")) {
+                        role = jsonObject.get("role");
+                        playerInfo.setRole(role.toString());
+                    }else{
+                        playerInfo.setRole("civilian");
+                    }
+                    if (jsonObject.containsKey("friend")) friend= jsonObject.get("friend");
+
+                    ui.displayGameStart(time, role, friend);
+
+                    isStart = true;
+                }else{
+                    response.put("status", "fail");
+                    response.put("description", "client cannot conform");
+                }
+
+                communicator.sendResponseKeSeberangSana(response);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }while (!isStart);
     }
 
     public void leave() {
@@ -217,6 +262,7 @@ public class Client {
             } else if(status.equals("ok")){
                 ui.displaySuccessfulResponse("Leave");
                 playerInfo.setIsAlive(0);
+                System.exit(0);
             } else if(status.equals("fail")) {
                 ui.displayFailedResponse("Leave", "connection failure: error response from server");
                 retryRequest = true;
@@ -259,6 +305,7 @@ public class Client {
             } else if(status.equals("ok")){
                 ui.displaySuccessfulResponse("Retrieve List Client");
                 isReady = true;
+                retryRequest = false;
             } else if(status.equals("fail")) {
                 ui.displayFailedResponse("Retrieve List Client", "connection failure: error response from server");
                 retryRequest = true;

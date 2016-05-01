@@ -1,6 +1,7 @@
 package Client;
 
 import java.net.InetSocketAddress;
+import java.util.List;
 
 /**
  * Created by nim_13512501 on 4/23/16.
@@ -18,10 +19,13 @@ public interface UI {
     void displayGameOver(String winner);
 
     void displayErrorConnecting(InetSocketAddress inetSocketAddress);
+    void displayGameStart(Object time, Object role, Object friend);
 
     /**
      * mengembalikan 0 bila leave, 1 bila ready
      * */
     int askReadyOrLeave();
+
+    void askLeaveWhileWaiting();
 }
 
