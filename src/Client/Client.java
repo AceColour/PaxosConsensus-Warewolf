@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.net.*;
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 
 import static java.net.InetAddress.*;
@@ -198,8 +199,16 @@ public class Client {
     }
 
     public void waitForStart() {
-        Boolean isLeave;
-        isLeave = ui.askLeaveWhileWaiting();
+
+        Thread leaveThread = new Thread(){
+            @Override
+            public void run(){
+
+                if (ui.askLeaveWhileWaiting())
+                    leave();
+            }
+        };
+        leaveThread.start();
 
         isStart = false;
         do{
@@ -239,6 +248,8 @@ public class Client {
                 e.printStackTrace();
             }
         }while (!isStart);
+
+        leaveThread.interrupt();
     }
 
     public void leave() {
@@ -377,8 +388,8 @@ public class Client {
             } else if(status.equals("ok")){
                 ui.displaySuccessfulResponse("Retrieve List Client");
 
-                // Clear list player
-                listPlayer.clear();
+                //create new listPlayer
+                List<ClientInfo> listPlayer2 = new LinkedList<ClientInfo>();
 
                 // Iterating client's array
                 JSONArray slideContent = (JSONArray) listClientResponse.get("clients");
@@ -389,14 +400,36 @@ public class Client {
                     JSONObject clientJSON = (JSONObject) i.next();
 
                     // Add client to list Player
-                    listPlayer.add(new ClientInfo(
-                            (Integer) clientJSON.get("player_id"),
-                            (Integer) clientJSON.get("is_alive"),
+                    listPlayer2.add(new ClientInfo(
+                            Integer.parseInt (clientJSON.get("player_id").toString()),
+                            Integer.parseInt (clientJSON.get("is_alive").toString()),
                             getByName((String)clientJSON.get("address")),
-                            (Integer) clientJSON.get("port"),
+                            Integer.parseInt (clientJSON.get("port").toString()),
                             (String)clientJSON.get("username")
                     ));
                 }
+
+                // Cari apakah ada player terbunuh
+                for (ClientInfo newClientInfo : listPlayer2){
+                    for (ClientInfo oldClientInfo : listPlayer){
+                        if (newClientInfo.getPlayerId() == oldClientInfo.getPlayerId()){
+                            ui.displayPlayerKilled(newClientInfo);
+                            if (newClientInfo.getPlayerId() == playerInfo.getPlayerId()){
+                                playerInfo.setIsAlive(0);
+                            }
+                        }
+                    }
+                }
+
+                // Clear list player
+                listPlayer.clear();
+                //copy listPlayer
+                for (ClientInfo newClientInfo: listPlayer2){
+                    listPlayer.add(newClientInfo);
+                }
+                listPlayer2.clear();
+
+                ui.displayListClient(listPlayer);
 
             } else if(status.equals("fail")) {
                 ui.displayFailedResponse("Retrieve List Client", "connection failure: error response from server");
@@ -420,6 +453,9 @@ public class Client {
     public void play() throws IOException, InterruptedException {
         gameOver = false;
 
+        if (isDay) { //TAIK TERNYATA BERUBAH JADINYA MULAI LANGSUNG SIANG DAN NGGA PERLU CHANGE PHASE
+            doPaxos();
+        }
 
         do{
 
@@ -429,23 +465,57 @@ public class Client {
                changePhase(serverCommand);
 
                 if (isDay) {
-                    //TODO show civilian killed if day and not gameover
-                    //TODO show werewolf/civilian killed if night and not gameover
-
                     doPaxos();
                 }
            }else if (serverCommand.get("method").equals("vote_now")){
-               JSONObject response = new JSONObject();
-               response.put("status","ok");
-
-               System.out.println("VOTING NOT IMPLEMENTED");
-            //TODO run voting process
+               runVotingProcess(serverCommand);
            }else if (serverCommand.get("method").equals("game_over")){
                 gameOver(serverCommand);
            }
 
         }while (!gameOver);
 
+    }
+
+    private void runVotingProcess(JSONObject serverCommand) throws InterruptedException {
+        JSONObject response = new JSONObject();
+        response.put("status","ok");
+        try {
+            communicator.sendResponseKeSeberangSana(response);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        VoteListener voteListener = null;
+
+        if (isKPU){
+            try {
+                voteListener = new VoteListener(listPlayer, playerInfo.getPlayerId(), datagramSocket, isDay);
+                voteListener.run();
+            } catch (SocketException e) {
+                e.printStackTrace();
+            }
+        }
+
+        sendVote();
+
+        if (isKPU){
+            assert voteListener != null;
+            voteListener.join();
+            JSONObject serverNotif = voteListener.getVoteResult();
+            try {
+                JSONObject serverResponse = communicator.sendRequestAndGetResponse(serverNotif);
+                if (serverResponse.get("status").equals("fail")){
+                    ui.displayFailedResponse("KPU send result to server fail", (String) serverResponse.get("description"));
+                }else if (serverResponse.get("status").equals("error")){
+                    ui.displayFailedResponse("KPU send result to server error", (String) serverResponse.get("description"));
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     public int countActivePlayers() {
@@ -479,7 +549,10 @@ public class Client {
                     JSONObject response = new JSONObject();
                     if (message.containsKey("kpu_id")){
                         response.put("status", "ok");
-                        kpu_id = (Integer) message.get("kpu_id");
+                        kpu_id = Integer.parseInt(message.get("kpu_id").toString());
+                        if (kpu_id == playerInfo.getPlayerId())
+                            isKPU = true;
+                        KPUSelected = true;
                     }else{
                         response.put("status", "error");
                         response.put("description", "value not found");
@@ -527,6 +600,35 @@ public class Client {
     }
     /* VOTING */
 
+    public boolean playerIDExists(int playerId){
+        for (ClientInfo clientInfo : listPlayer){
+            if (clientInfo.getPlayerId() == playerId){
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public void sendVote(){
+        if (isDay){
+            int votedID = ui.askPlayerKilled("day");
+            while (! playerIDExists(votedID)){
+                ui.displayFailedResponse("wrong number", "client ID " + votedID + "doesn't exist");
+            }
+
+            voteKillCivilian(votedID);
+
+        }else if (playerInfo.getRole().equals("werewolf")){
+            int votedID = ui.askPlayerKilled("night");
+            while (! playerIDExists(votedID)){
+                ui.displayFailedResponse("wrong number", "client ID " + votedID + "doesn't exist");
+            }
+
+            voteKillWerewolf(votedID);
+        }
+    }
+
     public void voteKillWerewolf(int playerId) {
         if(playerInfo.getRole().equals("werewolf") && !isDay){
             // Create JSON Object for killWerewolf request
@@ -539,7 +641,7 @@ public class Client {
     }
 
     public void voteKillCivilian(int playerId) {
-        if(playerInfo.getRole().equals("civilian") && isDay){
+        if(isDay){
 
             // Create JSON Object for killWerewolf request
             JSONObject killCivilianRequest = new JSONObject();

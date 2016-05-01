@@ -2,10 +2,6 @@ package Client;
 
 import Client.Communications.TCPRequestResponseChannel;
 import Client.Misc.ClientInfo;
-import Client.Paxos.Acceptor;
-import Client.Paxos.Messenger;
-import Client.Paxos.ProposalId;
-import Client.Paxos.Proposer;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
@@ -22,12 +18,13 @@ import java.util.Map;
  */
 public class VoteListener extends Thread{
     List<ClientInfo> clientList;
+    List<Integer> hasVotedId;
     CommandLineUI ui;
     int thisPlayerId;
     DatagramSocket datagramSocket;
     TCPRequestResponseChannel tcpRequestResponseChannel;
-    Boolean isWerewolf = false;
     Map<Integer,Integer> voteResult = new HashMap();
+    Boolean isDay = false;
     /**
      *
      * @param clientList a clientlist received from the server
@@ -35,20 +32,18 @@ public class VoteListener extends Thread{
      * @param datagramSocket a bound datagramsocket for listening and sending messages
      * @throws SocketException
      */
-    public VoteListener(List<ClientInfo> clientList, int thisPlayerId, DatagramSocket datagramSocket, Boolean isWerewolf) throws SocketException {
+    public VoteListener(List<ClientInfo> clientList, int thisPlayerId, DatagramSocket datagramSocket, Boolean isDay) throws SocketException {
         super();
+        this.thisPlayerId = thisPlayerId;
+        this.datagramSocket = datagramSocket;
+        this.isDay = isDay;
         this.clientList = new ArrayList<ClientInfo>(clientList);
+        this.hasVotedId = new ArrayList<Integer>();
         continueListening = true;
-        this.isWerewolf = isWerewolf;
     }
 
     @Override
     public void run(){
-        if(voteResult.size() >= clientList.size() && !isWerewolf){
-            continueListening = false;
-        }else if(voteResult.size() >= 2 && isWerewolf) {
-            continueListening = false;
-        }
         try {
             runSisanya();
         } catch (SocketException e) {
@@ -68,6 +63,16 @@ public class VoteListener extends Thread{
 
         while (continueListening){
             try {
+
+                // Check whether it is day or night
+                if(voteResult.size() >= clientList.size() && isDay){
+                    continueListening = false;
+                    break;
+                }else if(voteResult.size() >= getRemainingWerewolf() && !isDay) {
+                    continueListening = false;
+                    break;
+                }
+
                 datagramSocket.receive(message);
                 handleMessage(message);
             } catch (SocketTimeoutException e){
@@ -104,63 +109,40 @@ public class VoteListener extends Thread{
             jsonObject = (JSONObject) jsonParser.parse(messageString);
             int countVote = 0;
 
-            String receivedMethod = "";
             if (jsonObject.containsKey("method")){
-                if(jsonObject.get("method").equals("vote_werewolf") || jsonObject.get("method").equals("vote_civilian")){
+                if((jsonObject.get("method").equals("vote_werewolf") && !isDay)
+                        || (jsonObject.get("method").equals("vote_civilian") && isDay)){
+
                     int playerId =  Integer.parseInt(jsonObject.get("player_id").toString());
 
-                    Object value = voteResult.get(playerId);
-                    if (value != null) {
-                        // Get value
-                        for (Map.Entry<Integer, Integer> entry : voteResult.entrySet()) {
-                            if(entry.getKey() == playerId){
-                                countVote += entry.getValue();
-                            }
+                    Boolean isFound = false;
+                    for (Map.Entry<Integer, Integer> entry : voteResult.entrySet()) {
+                        if(entry.getKey() == playerId && !hasVotedId.contains(playerId)){
+                            countVote = entry.getValue();
+                            countVote++;
+                            isFound = true;
+                            hasVotedId.add(playerId);
                         }
-                    } else {
-                        // No such key
+                    }
+                    if(!isFound)
                         voteResult.put(playerId,1);
                     }
-                }
-
-//            }else if (jsonObject.containsKey("status") && jsonObject.containsKey("description")){
-//                if (jsonObject.get("status").equals("ok") && jsonObject.get("description").equals("accepted")) {
-//                    if (jsonObject.containsKey("previous_accepted")) {
-//                        receivedMethod = "promise";
-//                    } else {
-//                        receivedMethod = "acceptAccepted";
-//                    }
-//                } else if(jsonObject.get("status").equals("fail") && jsonObject.get("description").equals("rejected")){
-//                    receivedMethod = "rejected";
-//                }
-            }else {
-
             }
-
-//            //next method
-//            //TODO kasih kapan harus berhenti
-//            if (receivedMethod.equals("prepare")){
-//                acceptor.receivePrepare(UID, new ProposalId((List<Integer>) jsonObject.get("proposal_id")));
-//            } else if (receivedMethod.equals("accept")) {
-//                acceptor.receiveAccept(UID, new ProposalId((List<Integer>) jsonObject.get("proposal_id")), (Integer) jsonObject.get("kpu_id"));
-//            } else if (receivedMethod.equals("promise")){
-//                proposer.receivePromise(UID, new ProposalId((List<Integer>) jsonObject.get("proposal_id")),
-//                        new ProposalId(-1,-1) /*TODO apakah ganti yang bener atau gimana, soalnya di protokol yang dari spek ngga ada ini*/,
-//                        (Integer) jsonObject.get("previous_accepted"));
-//            }else if (receivedMethod.equals("acceptAccepted")){
-//                proposer.receiveAccepted();
-//                continueListening = false;
-//            }else if(receivedMethod.equals("rejected")) {
-//                //TODO Rejected promise
-//            }
-
         } catch (ParseException e) {
 
         }
     }
 
-    public Map<Integer, Integer> getVoteResult() {
-        return voteResult;
+    // Get JSONObject from vote result
+    public JSONObject getVoteResult() {
+        JSONParser parser = new JSONParser();
+        JSONObject jsonObject = new JSONObject();
+        try {
+            jsonObject = (JSONObject) parser.parse(voteResult.toString());
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+        return jsonObject;
     }
 
     public int getUIDFromPortAndInetAddress(InetAddress address, int port){
@@ -169,5 +151,15 @@ public class VoteListener extends Thread{
                 return clientInfo.getPlayerId();
         }
         return -1;
+    }
+
+    public int getRemainingWerewolf() {
+        int count = 2;
+        for(ClientInfo ci : clientList){
+            if(ci.getRole().equals("werewolf")){
+                count--;
+            }
+        }
+        return count;
     }
 }
