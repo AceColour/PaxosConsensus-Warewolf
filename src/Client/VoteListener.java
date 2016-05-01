@@ -81,6 +81,7 @@ public class VoteListener extends Thread{
 
     public void stopListener(){
         continueListening = false;
+
     }
 
     public void handleMessage(DatagramPacket message){
@@ -105,7 +106,7 @@ public class VoteListener extends Thread{
 
             String receivedMethod = "";
             if (jsonObject.containsKey("method")){
-                if(jsonObject.get("method").equals("vote_werewolf") && isWerewolf){
+                if(jsonObject.get("method").equals("vote_werewolf") || jsonObject.get("method").equals("vote_civilian")){
                     int playerId =  Integer.parseInt(jsonObject.get("player_id").toString());
 
                     Object value = voteResult.get(playerId);
