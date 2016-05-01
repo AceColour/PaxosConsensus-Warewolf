@@ -198,7 +198,8 @@ public class Client {
     }
 
     public void waitForStart() {
-        ui.askLeaveWhileWaiting(); //TODO ini belum diimplementasi. nanti tolong diimplementasi
+        Boolean isLeave;
+        isLeave = ui.askLeaveWhileWaiting();
 
         isStart = false;
         do{

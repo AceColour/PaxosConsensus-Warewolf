@@ -28,6 +28,6 @@ public interface UI {
      * */
     int askReadyOrLeave();
 
-    void askLeaveWhileWaiting();
+    Boolean askLeaveWhileWaiting();
 }
 

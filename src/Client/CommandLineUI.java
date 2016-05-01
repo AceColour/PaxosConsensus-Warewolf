@@ -140,8 +140,10 @@ public class CommandLineUI implements UI{
     }
 
     @Override
-    public void askLeaveWhileWaiting() {
+    public Boolean askLeaveWhileWaiting() {
         System.out.println("waiting... type LEAVE followed by enter newline to leave the game");
-        System.out.println("LEAVE NOT IMPLEMENTED. sorry");
+        Scanner scanIn = new Scanner(System.in);
+        String result = scanIn.nextLine();
+        return result.equals("leave");
     }
 }
